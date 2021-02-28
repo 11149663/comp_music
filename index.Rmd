@@ -28,3 +28,175 @@ plot(pressure)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+# load libraries and connect to Spotify
+library(tidyverse)
+library(spotifyr)
+library(compmus)
+```
+
+```{r}
+disney <- get_playlist_audio_features("", "37i9dQZF1DX8C9xQcOrE6T")
+view(disney)
+```
+
+```{r}
+s80 <- get_playlist_audio_features("", "23xQYspGsaIsztrKTHM8cN")
+s00 <- get_playlist_audio_features("", "6dv5FbNRVlQelteqnNDFTe")
+```
+
+```{r}
+wood <-
+  get_tidy_audio_analysis("6IQILcYkN2S2eSu5IHoPEH") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+```
+
+```{r}
+wood %>%
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>%
+  compmus_gather_chroma() %>% 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  theme_minimal() +
+  scale_fill_viridis_c()
+```
+```{r}
+## The Tallis Scholars
+tallis <-
+  get_tidy_audio_analysis("2J3Mmybwue0jyQ0UVMYurH") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+## La Chapelle Royale
+chapelle <-
+  get_tidy_audio_analysis("4ccw2IcnFt1Jv9LqQCOYDi") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+## The Cambridge Singers
+cambridge <-
+  get_tidy_audio_analysis("54cAT1TCFaZbLOB2i1y61h") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+
+
+## Oxford Camerata
+oxford <-
+  get_tidy_audio_analysis("5QyUsMY40MQ1VebZXSaonU") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+## Chanticleer
+chanticleer <-
+  get_tidy_audio_analysis("1bocG1N8LM7MSgj9T1n3XH") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+
+
+## The Hilliard Ensemble
+hilliard <-
+  get_tidy_audio_analysis("2rXEyq50luqaFNC9DkcU6k") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+## The Gabrieli Consort
+gabrieli <-
+  get_tidy_audio_analysis("4NnJ4Jes8a8mQUfXhwuITx") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+```
+
+```{r}
+compmus_long_distance(
+  tallis %>% mutate(pitches = map(pitches, compmus_normalise, "manhattan")),
+  chapelle %>% mutate(pitches = map(pitches, compmus_normalise, "manhattan")),
+  feature = pitches,
+  method = "aitchison"
+) %>%
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_equal() +
+  labs(x = "The Tallis Scholars", y = "La Chapelle Royale") +
+  theme_minimal() +
+  scale_fill_viridis_c(guide = NULL)
+```
+```{r}
+bzt <-
+  get_tidy_audio_analysis("5ZLkc5RY1NM4FtGWEd6HOE") %>% # Change URI.
+  compmus_align(bars, segments) %>%                     # Change `bars`
+  select(bars) %>%                                      #   in all three
+  unnest(bars) %>%                                      #   of these lines.
+  mutate(
+    pitches =
+      map(segments,
+        compmus_summarise, pitches,
+        method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  ) %>%
+  mutate(
+    timbre =
+      map(segments,
+        compmus_summarise, timbre,
+        method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  )
+```
+
+```{r}
+bzt %>%
+  compmus_gather_timbre() %>%
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = basis,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  scale_fill_viridis_c() +                              
+  theme_classic()
+```
+
+```{r}
+bzt %>%
+  compmus_self_similarity(timbre, "cosine") %>% 
+  ggplot(
+    aes(
+      x = xstart + xduration / 2,
+      width = xduration,
+      y = ystart + yduration / 2,
+      height = yduration,
+      fill = d
+    )
+  ) +
+  geom_tile() +
+  coord_fixed() +
+  scale_fill_viridis_c(guide = "none") +
+  theme_classic() +
+  labs(x = "", y = "")
+```
+
