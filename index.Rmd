@@ -1,201 +1,195 @@
 ---
-title: "My Computational Musicology Portfolio: East vs West"
+title: "My Computational Musicology Portfolio"
 author: "Jason Z."
-date: "10/02/2021"
-output: html_document
+date: "Feb/Mar 2021"
+output:
+  flexdashboard::flex_dashboard:
+    storyboard: TRUE
+    theme: flatly
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+# stackoverflow.com/questions/33402920/using-ggplot2-and-special-characters
+# switch between reading error messages and reading track labels
+Sys.setlocale("LC_ALL", "Japanese") 
+options(encoding = "UTF-8")
 ```
 
+```{r, include = FALSE}
 ## Loading libraries
-
-```{r}
-# load libraries and connect to Spotify
 library(tidyverse) 
-library(spotifyr) # load information by track, album, artist, or playlist
+library(spotifyr)
 library(compmus)
+library(plotly)
+library(flexdashboard)
+library(readxl)
 ```
 
-## W06: URI retrieval demo
-
-```{r}
-juditha <- get_track_audio_features(c("2M5b9YLAgFroqWzeaZf86e", "3DBKc4ioGnMQLlbGQcFDIO"))
-alla <- get_album_tracks("7oI0E3DdTbD85rhMg19GSU") # no features
-gilberto <- get_artist_audio_features("gilberto gil")
-ecm <- get_playlist_audio_features("", "1zN4nK6oHMo2dei2WWPtSL")
-```
-## W06: Summary statistics demo
-
-```{r}
-ecm %>%
-  summarise(
-    mean_speechiness = mean(speechiness),
-    mean_acousticness = mean(acousticness),
-    mean_liveness = mean(liveness),
-    sd_speechiness = sd(speechiness),
-    sd_acousticness = sd(acousticness),
-    sd_liveness = sd(liveness),
-    median_speechiness = median(speechiness),
-    median_acousticness = median(acousticness),
-    median_liveness = median(liveness),
-    mad_speechiness = mad(speechiness),
-    mad_acousticness = mad(acousticness),
-    mad_liveness = mad(liveness)
-  )
+```{r, include = FALSE}
+# Retrieve my portfolio playlists
+y2011 <- get_playlist_audio_features("", "544c7nycI0F40aO2dZkWXm")
+y2012 <- get_playlist_audio_features("", "4GRDx8ryZypvBaZFSh4kWa")
+y2013 <- get_playlist_audio_features("", "1ys2ATlrbdoh9JfT8fKToA")
+y2014 <- get_playlist_audio_features("", "1yqM9ChrxHxbOJUiYbFPLZ")
+y2015 <- get_playlist_audio_features("", "6WmvRZEr7bWnCscOFVhNJB")
+y2016 <- get_playlist_audio_features("", "60OfN9aW1vJHvhqUOEVxMQ")
+y2017 <- get_playlist_audio_features("", "4c9iuV5x9M9FHumOjGRfg0")
+y2018 <- get_playlist_audio_features("", "3gIybzPIbiJSzoeU7lDyDj")
+y2019 <- get_playlist_audio_features("", "0MIzuDtEA31PrJ68ZXdeqx")
+y2020 <- get_playlist_audio_features("", "1HN2I323QTNX5jofgP8fiC")
 ```
 
-
-## W06: Disney demo
-
-```{r}
-disney <- get_playlist_audio_features("", "37i9dQZF1DX8C9xQcOrE6T")
-view(disney)
-```
-
-```{r}
-disney %>%
-  summarise(
-    mean_speechiness = mean(speechiness),
-    mean_acousticness = mean(acousticness),
-    mean_liveness = mean(liveness),
-    sd_speechiness = sd(speechiness),
-    sd_acousticness = sd(acousticness),
-    sd_liveness = sd(liveness),
-    median_speechiness = median(speechiness),
-    median_acousticness = median(acousticness),
-    median_liveness = median(liveness),
-    mad_speechiness = mad(speechiness),
-    mad_acousticness = mad(acousticness),
-    mad_liveness = mad(liveness)
-  )
-```
-
-## W06: Awards demo
-
-```{r}
-grammy <- get_playlist_audio_features("", "4kQovkgBZTd8h2HCM3fF31")
-edison <- get_playlist_audio_features("", "37i9dQZF1DX8mnKbIkppDf")
-```
-
-```{r}
-awards <-
+```{r, include = FALSE}
+# Mutate into category:year
+combined_year_pt1 <- 
   bind_rows(
-    grammy %>% mutate(category = "Grammys"),
-    edison %>% mutate(category = "Edisons")
+    y2011 %>% mutate(category = "2011", mode = ifelse(mode == 0, "Minor", "Major")),
+    y2012 %>% mutate(category = "2012", mode = ifelse(mode == 0, "Minor", "Major")),
+    y2013 %>% mutate(category = "2013", mode = ifelse(mode == 0, "Minor", "Major")),
+    y2014 %>% mutate(category = "2014", mode = ifelse(mode == 0, "Minor", "Major")),
+    y2015 %>% mutate(category = "2015", mode = ifelse(mode == 0, "Minor", "Major")),
+    y2016 %>% mutate(category = "2016", mode = ifelse(mode == 0, "Minor", "Major"))
+  )
+
+combined_year_pt2 <- 
+  bind_rows(
+    y2015 %>% mutate(category = "2015", mode = ifelse(mode == 0, "Minor", "Major")),
+    y2016 %>% mutate(category = "2016", mode = ifelse(mode == 0, "Minor", "Major")),
+    y2017 %>% mutate(category = "2017", mode = ifelse(mode == 0, "Minor", "Major")),
+    y2018 %>% mutate(category = "2018", mode = ifelse(mode == 0, "Minor", "Major")),
+    y2019 %>% mutate(category = "2019", mode = ifelse(mode == 0, "Minor", "Major")),
+    y2020 %>% mutate(category = "2020", mode = ifelse(mode == 0, "Minor", "Major"))
   )
 ```
 
-```{r}
-grammy %>% ggplot(aes(x = energy)) + geom_histogram(binwidth = 0.1)
-```
-```{r}
-awards %>%
-  ggplot(aes(x = energy)) +
-  geom_histogram(binwidth = 0.1) +
-  facet_wrap(~category)
-```
+### **1. Lorem Ipsum**: Yuddy Lam.
+ 
+**Hallotjes?**
 
-```{r}
-awards %>%
-  ggplot(aes(x = category, y = energy)) +
-  geom_boxplot()
-```
-```{r}
-awards %>%
-  ggplot(aes(x = category, y = energy)) +
-  geom_violin()
-```
+inspirerende tekst
 
-```{r}
-grammy %>% ggplot(aes(x = valence, y = energy)) + geom_jitter() + geom_smooth()
-```
-```{r}
-awards %>%                    # Start with awards.
-  mutate(
-    mode = ifelse(mode == 0, "Minor", "Major")
-  ) %>%
-  ggplot(                     # Set up the plot.
-    aes(
-      x = valence,
-      y = energy,
-      size = loudness,
-      colour = mode
-    )
-  ) +
-  geom_point() +              # Scatter plot.
-  geom_rug(size = 0.1) +      # Add 'fringes' to show data distribution.
-  geom_text(                  # Add text labels from above.
-    aes(
-      x = valence,
-      y = energy,
-      label = label
-    ),
-    data = 
-      tibble(
-        label = c("Altijd wel iemand", "ENERGY"),
-        category = c("Edisons", "Grammys"),
-        valence = c(0.090, 0.123),
-        energy = c(0.101, 0.967)
-      ),
-    colour = "black",         # Override colour (not mode here).
-    size = 3,                 # Override size (not loudness here).
-    hjust = "left",           # Align left side of label with the point.
-    vjust = "bottom",         # Align bottom of label with the point.
-    nudge_x = -0.05,          # Nudge the label slightly left.
-    nudge_y = 0.02            # Nudge the label slightly up.
-  ) +
-  facet_wrap(~category) +     # Separate charts per playlist.
-  scale_x_continuous(         # Fine-tune the x axis.
-    limits = c(0, 1),
-    breaks = c(0, 0.50, 1),   # Use grid-lines for quadrants only.
-    minor_breaks = NULL       # Remove 'minor' grid-lines.
-  ) +
-  scale_y_continuous(         # Fine-tune the y axis in the same way.
-    limits = c(0, 1),
-    breaks = c(0, 0.50, 1),
-    minor_breaks = NULL
-  ) +
-  scale_colour_brewer(        # Use the Color Brewer to choose a palette.
-    type = "qual",            # Qualitative set.
-    palette = "Paired"        # Name of the palette is 'Paired'.
-  ) +
-  scale_size_continuous(      # Fine-tune the sizes of each point.
-    trans = "exp",            # Use an exp transformation to emphasise loud.
-    guide = "none"            # Remove the legend for size.
-  ) +
-  theme_light() +             # Use a simpler theme.
-  labs(                       # Make the titles nice.
-    x = "Valence",
-    y = "Energy",
-    colour = "Mode"
-  )
+***
+Sources:
+
+- https://last.fm/user/wutsmainaem
+- https://www.spotlistr.com/search/lastfm-top-for-time-period
+- https://soundiiz.com/
+
+### 2. Bar graph
+
+```{r, echo = FALSE}
+scrobbles <- read_excel("C:/Users/Jason/Desktop/CompMus/Scrobbles.xlsx")
+
+listens <- scrobbles %>%
+  ggplot(aes(x = period, y = scrobbles)) +
+  theme_light() +
+  ggtitle("Number of 'scrobbles' per quartile") +
+  geom_col(width = 0.9) +
+  labs(x="year/quartile", y="number of scrobbles") + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+
+ggplotly(listens)
 ```
 
+***
+TODO:
 
-## W06: Decades demo
+- Add dashed vertical lines with relevant life events, which could explain changes in listening behaviour. Examples:
 
-```{r}
-s80 <- get_playlist_audio_features("", "23xQYspGsaIsztrKTHM8cN")
-s00 <- get_playlist_audio_features("", "6dv5FbNRVlQelteqnNDFTe")
+2014/2: "CE middelbare school" (correspond to lower valence as seen in next figures?)
+
+Pre-2015: Only 'scrobbles' from PC/laptop.
+
+2015/1: New phone and subscribed to Spotify with last.fm
+
+2016/3: Start UvA
+
+2018/3: Half year in Hong Kong
+
+- Show within each bar the proportion of top-60 songs (probably easier to do per year rather than per quartile).
+
+- Turn above text into a readable story.
+
+### 3.1 Track-level comparison: Part 1
+
+```{r, echo = FALSE}
+valence_vs_energy_pt1 <- combined_year_pt1 %>%
+  ggplot(aes(x = valence,
+             y = energy,
+             color = mode,
+             size = tempo,
+             label = track.name)) +
+  facet_wrap(~category) +
+  geom_point(position = 'jitter', 
+             alpha = 0.6) +
+  geom_rug(size = 0.20) +
+  ggtitle("Track-level comparison") +
+  theme_light() +
+  scale_color_manual(values = c("Minor" = "#227788", "Major" = "#DD8877"),
+                     guide = "legend") +
+  scale_x_continuous(breaks = c(0, 0.50, 1),
+                     minor_breaks = NULL) +
+  scale_y_continuous(breaks = c(0, 0.50, 1),
+                     minor_breaks = NULL) +
+  scale_size_continuous(range = c(0, 5),
+                        guide = "none")
+
+ggplotly(valence_vs_energy_pt1)
+```
+***
+Text
+
+### 3.2 Track-level comparison: Part 2
+
+```{r, echo = FALSE}
+valence_vs_energy_pt2 <- combined_year_pt2 %>%
+  ggplot(aes(x = valence,
+             y = energy,
+             color = mode,
+             size = tempo,
+             label = track.name)) +
+  facet_wrap(~category) +
+  geom_point(position = 'jitter', 
+             alpha = 0.6) +
+  geom_rug(size = 0.20) +
+  ggtitle("Track-level comparison") +
+  theme_light() +
+  scale_color_manual(values = c("Minor" = "#227788", "Major" = "#DD8877"),
+                     guide = "legend") +
+  scale_x_continuous(breaks = c(0, 0.50, 1),
+                     minor_breaks = NULL) +
+  scale_y_continuous(breaks = c(0, 0.50, 1),
+                     minor_breaks = NULL) +
+  scale_size_continuous(range = c(0, 5),
+                        guide = "none")
+
+ggplotly(valence_vs_energy_pt2)
+```
+```{r, include = FALSE}
+#combined_year_pt1 %>%
+#  mutate(artists = select(!!!track.artists, name))
+  
+# scrobbles$scrobbles
 ```
 
-## W07: Obtain song
 
-```{r}
-wood <-
-  get_tidy_audio_analysis("6IQILcYkN2S2eSu5IHoPEH") %>%
+***
+Text
+
+### 4 Chromagram
+
+```{r, echo = FALSE}
+
+juhachi_chroma <-
+  get_tidy_audio_analysis("2FghAESlnAFukLy5j2Ascp") %>%
   select(segments) %>%
   unnest(segments) %>%
   select(start, duration, pitches)
-```
 
-## W07: Chromagram demo
-
-```{r}
-wood %>%
-  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>%
+juhachi_chroma %>%
+  mutate(pitches = map(pitches, compmus_normalise, "manhattan")) %>% # manhattan
   compmus_gather_chroma() %>% 
   ggplot(
     aes(
@@ -206,69 +200,89 @@ wood %>%
     )
   ) +
   geom_tile() +
+  ggtitle("Jùhachi by Sylvain Chauveau") +
   labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
   theme_minimal() +
   scale_fill_viridis_c()
-```
-## W07: Obtain songs
 
-```{r}
-## The Tallis Scholars
-tallis <-
-  get_tidy_audio_analysis("2J3Mmybwue0jyQ0UVMYurH") %>%
-  select(segments) %>%
-  unnest(segments) %>%
-  select(start, duration, pitches)
-## La Chapelle Royale
-chapelle <-
-  get_tidy_audio_analysis("4ccw2IcnFt1Jv9LqQCOYDi") %>%
-  select(segments) %>%
-  unnest(segments) %>%
-  select(start, duration, pitches)
-## The Cambridge Singers
-cambridge <-
-  get_tidy_audio_analysis("54cAT1TCFaZbLOB2i1y61h") %>%
+chihei_chroma <-
+  get_tidy_audio_analysis("4NV9wYTFbFuOndIUUyE5Pi") %>%
   select(segments) %>%
   unnest(segments) %>%
   select(start, duration, pitches)
 
+chihei_chroma %>%
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>% # euclidean
+  compmus_gather_chroma() %>% 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  ggtitle("Far from the Atmosphere by Chihei Hatakeyama") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  theme_minimal() +
+  scale_fill_viridis_c()
 
-## Oxford Camerata
-oxford <-
-  get_tidy_audio_analysis("5QyUsMY40MQ1VebZXSaonU") %>%
-  select(segments) %>%
-  unnest(segments) %>%
-  select(start, duration, pitches)
-## Chanticleer
-chanticleer <-
-  get_tidy_audio_analysis("1bocG1N8LM7MSgj9T1n3XH") %>%
+lbolt_chroma <-
+  get_tidy_audio_analysis("7DNRAyfqNpN0qzrS5JmJwY") %>%
   select(segments) %>%
   unnest(segments) %>%
   select(start, duration, pitches)
 
+lbolt_chroma %>%
+  mutate(pitches = map(pitches, compmus_normalise, "chebyshev")) %>% # chebyshev
+  compmus_gather_chroma() %>% 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  ggtitle("Dead Cowboy by Lightning Bolt") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  theme_minimal() +
+  scale_fill_viridis_c()
 
-## The Hilliard Ensemble
-hilliard <-
-  get_tidy_audio_analysis("2rXEyq50luqaFNC9DkcU6k") %>%
-  select(segments) %>%
-  unnest(segments) %>%
-  select(start, duration, pitches)
-## The Gabrieli Consort
-gabrieli <-
-  get_tidy_audio_analysis("4NnJ4Jes8a8mQUfXhwuITx") %>%
-  select(segments) %>%
-  unnest(segments) %>%
-  select(start, duration, pitches)
 ```
 
-## W07: Dynamic Time Warping demo
+***
+Song's very reliant on silence with occasional ...
 
-```{r}
+Also interesting: 
+Most listened song vs favourite song of 2020.
+Compare multiple low valence/energy songs and see if they have something in common.
+
+### Optional: DTW of Dreams cover by Faye Wong
+
+```{r, echo = FALSE}
+faye <-
+  get_tidy_audio_analysis("1SGPQAdXXDbcRX8kGoBiN3") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+
+dolores <-
+  get_tidy_audio_analysis("4JGKZS7h4Qa16gOU3oNETV") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+```
+
+```{r, echo = FALSE}
+
 compmus_long_distance(
-  tallis %>% mutate(pitches = map(pitches, compmus_normalise, "manhattan")),
-  chapelle %>% mutate(pitches = map(pitches, compmus_normalise, "manhattan")),
+  dolores %>% mutate(pitches = map(pitches, compmus_normalise, "euclidean")),
+  faye %>% mutate(pitches = map(pitches, compmus_normalise, "euclidean")),
   feature = pitches,
-  method = "aitchison"
+  method = "angular"
 ) %>%
   ggplot(
     aes(
@@ -281,262 +295,22 @@ compmus_long_distance(
   ) +
   geom_tile() +
   coord_equal() +
-  labs(x = "The Tallis Scholars", y = "La Chapelle Royale") +
+  labs(x = "Dreams by Cranberries", y = "Dreamer by Faye Wong") +
   theme_minimal() +
   scale_fill_viridis_c(guide = NULL)
-```
-## W08: Obtain Bloed, Zweet, en Tranen
 
-```{r}
-bzt <-
-  get_tidy_audio_analysis("5ZLkc5RY1NM4FtGWEd6HOE") %>% # Change URI.
-  compmus_align(bars, segments) %>%                     # Change `bars`
-  select(bars) %>%                                      #   in all three
-  unnest(bars) %>%                                      #   of these lines.
-  mutate(
-    pitches =
-      map(segments,
-        compmus_summarise, pitches,
-        method = "rms", norm = "euclidean"              # Change summary & norm.
-      )
-  ) %>%
-  mutate(
-    timbre =
-      map(segments,
-        compmus_summarise, timbre,
-        method = "rms", norm = "euclidean"              # Change summary & norm.
-      )
-  )
 ```
 
-## W08: Cepstrogram demo
+***
+Reasoning on inclusion: In top 2014.
 
-```{r}
-bzt %>%
-  compmus_gather_timbre() %>%
-  ggplot(
-    aes(
-      x = start + duration / 2,
-      width = duration,
-      y = basis,
-      fill = value
-    )
-  ) +
-  geom_tile() +
-  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
-  scale_fill_viridis_c() +                              
-  theme_classic()
-```
-## W08: Self-similarity Matrix demo
+### 5 Self-similarity Matrices
 
-```{r}
-bzt %>%
-  compmus_self_similarity(timbre, "cosine") %>% 
-  ggplot(
-    aes(
-      x = xstart + xduration / 2,
-      width = xduration,
-      y = ystart + yduration / 2,
-      height = yduration,
-      fill = d
-    )
-  ) +
-  geom_tile() +
-  coord_fixed() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_classic() +
-  labs(x = "", y = "")
-```
+***
 
-```{r}
-circshift <- function(v, n) {
-  if (n == 0) v else c(tail(v, n), head(v, -n))
-}
+### Conclusions
 
-#      C     C#    D     Eb    E     F     F#    G     Ab    A     Bb    B
-major_chord <-
-  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
-minor_chord <-
-  c(   1,    0,    0,    1,    0,    0,    0,    1,    0,    0,    0,    0)
-seventh_chord <-
-  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    1,    0)
+TODO
 
-major_key <-
-  c(6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
-minor_key <-
-  c(6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
-
-chord_templates <-
-  tribble(
-    ~name, ~template,
-    "Gb:7", circshift(seventh_chord, 6),
-    "Gb:maj", circshift(major_chord, 6),
-    "Bb:min", circshift(minor_chord, 10),
-    "Db:maj", circshift(major_chord, 1),
-    "F:min", circshift(minor_chord, 5),
-    "Ab:7", circshift(seventh_chord, 8),
-    "Ab:maj", circshift(major_chord, 8),
-    "C:min", circshift(minor_chord, 0),
-    "Eb:7", circshift(seventh_chord, 3),
-    "Eb:maj", circshift(major_chord, 3),
-    "G:min", circshift(minor_chord, 7),
-    "Bb:7", circshift(seventh_chord, 10),
-    "Bb:maj", circshift(major_chord, 10),
-    "D:min", circshift(minor_chord, 2),
-    "F:7", circshift(seventh_chord, 5),
-    "F:maj", circshift(major_chord, 5),
-    "A:min", circshift(minor_chord, 9),
-    "C:7", circshift(seventh_chord, 0),
-    "C:maj", circshift(major_chord, 0),
-    "E:min", circshift(minor_chord, 4),
-    "G:7", circshift(seventh_chord, 7),
-    "G:maj", circshift(major_chord, 7),
-    "B:min", circshift(minor_chord, 11),
-    "D:7", circshift(seventh_chord, 2),
-    "D:maj", circshift(major_chord, 2),
-    "F#:min", circshift(minor_chord, 6),
-    "A:7", circshift(seventh_chord, 9),
-    "A:maj", circshift(major_chord, 9),
-    "C#:min", circshift(minor_chord, 1),
-    "E:7", circshift(seventh_chord, 4),
-    "E:maj", circshift(major_chord, 4),
-    "G#:min", circshift(minor_chord, 8),
-    "B:7", circshift(seventh_chord, 11),
-    "B:maj", circshift(major_chord, 11),
-    "D#:min", circshift(minor_chord, 3)
-  )
-
-key_templates <-
-  tribble(
-    ~name, ~template,
-    "Gb:maj", circshift(major_key, 6),
-    "Bb:min", circshift(minor_key, 10),
-    "Db:maj", circshift(major_key, 1),
-    "F:min", circshift(minor_key, 5),
-    "Ab:maj", circshift(major_key, 8),
-    "C:min", circshift(minor_key, 0),
-    "Eb:maj", circshift(major_key, 3),
-    "G:min", circshift(minor_key, 7),
-    "Bb:maj", circshift(major_key, 10),
-    "D:min", circshift(minor_key, 2),
-    "F:maj", circshift(major_key, 5),
-    "A:min", circshift(minor_key, 9),
-    "C:maj", circshift(major_key, 0),
-    "E:min", circshift(minor_key, 4),
-    "G:maj", circshift(major_key, 7),
-    "B:min", circshift(minor_key, 11),
-    "D:maj", circshift(major_key, 2),
-    "F#:min", circshift(minor_key, 6),
-    "A:maj", circshift(major_key, 9),
-    "C#:min", circshift(minor_key, 1),
-    "E:maj", circshift(major_key, 4),
-    "G#:min", circshift(minor_key, 8),
-    "B:maj", circshift(major_key, 11),
-    "D#:min", circshift(minor_key, 3)
-  )
-```
-
-```{r}
-twenty_five <-
-  get_tidy_audio_analysis("5UVsbUV0Kh033cqsZ5sLQi") %>%
-  compmus_align(sections, segments) %>%
-  select(sections) %>%
-  unnest(sections) %>%
-  mutate(
-    pitches =
-      map(segments,
-        compmus_summarise, pitches,
-        method = "mean", norm = "manhattan"
-      )
-  )
-```
-
-```{r}
-twenty_five %>% 
-  compmus_match_pitch_template(
-    key_templates,         # Change to chord_templates if descired
-    method = "manhattan",  # Try different distance metrics
-    norm = "manhattan"     # Try different norms
-  ) %>%
-  ggplot(
-    aes(x = start + duration / 2, width = duration, y = name, fill = d)
-  ) +
-  geom_tile() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_minimal() +
-  labs(x = "Time (s)", y = "")
-```
-
-```{r}
-bebop <-
-  get_playlist_audio_features(
-    "thesoundsofspotify",
-    "55s8gstHcaCyfU47mQgLrB"
-  ) %>%
-  slice(1:30) %>%
-  add_audio_analysis()
-bigband <-
-  get_playlist_audio_features(
-    "thesoundsofspotify",
-    "2cjIvuw4VVOQSeUAZfNiqY"
-  ) %>%
-  slice(1:30) %>%
-  add_audio_analysis()
-jazz <-
-  bebop %>%
-  mutate(genre = "Bebop") %>%
-  bind_rows(bigband %>% mutate(genre = "Big Band"))
-```
-
-```{r}
-jazz %>%
-  mutate(
-    sections =
-      map(
-        sections,                                    # sections or segments
-        summarise_at,
-        vars(tempo, loudness, duration),             # features of interest
-        list(section_mean = mean, section_sd = sd)   # aggregation functions
-      )
-  ) %>%
-  unnest(sections) %>%
-  ggplot(
-    aes(
-      x = tempo,
-      y = tempo_section_sd,
-      colour = genre,
-      alpha = loudness
-    )
-  ) +
-  geom_point(aes(size = duration / 60)) +
-  geom_rug() +
-  theme_minimal() +
-  ylim(0, 5) +
-  labs(
-    x = "Mean Tempo (bpm)",
-    y = "SD Tempo",
-    colour = "Genre",
-    size = "Duration (min)",
-    alpha = "Volume (dBFS)"
-  )
-```
-
-```{r}
-jazz %>%
-  mutate(
-    timbre =
-      map(
-        segments,
-        compmus_summarise,
-        timbre,
-        method = "mean"
-      )
-  ) %>%
-  select(genre, timbre) %>%
-  compmus_gather_timbre() %>%
-  ggplot(aes(x = basis, y = value, fill = genre)) +
-  geom_violin() +
-  scale_fill_viridis_d() +
-  labs(x = "Spotify Timbre Coefficients", y = "", fill = "Genre")
-```
-
+***
+TODO
