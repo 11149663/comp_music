@@ -287,8 +287,6 @@ Compare above to top track of years 2016 (or other/more years).
 
 
 ### 1. Introduction: Diving into my **10-years** worth of last.fm **music log**
-
-[W05: Draft]
  
 **What is your corpus, why did you choose it, and what do you think is interesting about it?** 
 
@@ -296,35 +294,55 @@ Last.fm is an online music database, a music recommender system, and a social
 networking service combined, which was founded in the days when MSN, Myspace, and
 Runescape were still a thing. In general, the website offers a plugin for you 
 to install on your PC and phone, which can track your listening behaviour. 
-One listen is then transferred ("scrobbled") to the database and displayed on your 
+One listen, a **scrobble**, is then transferred ("scrobbled") to the database and displayed on your 
 personal profile. With the accumulated data, they could also recommend you 
 new/similar music to discover or connect you to people with similar music taste.
 Although the social aspects have been watered down, I've still been using their 
-service ever since June 2011 (1). With a *vast* amount of data up for grabs, it 
+service ever since June 2011 [1]. With a *vast* amount of data up for grabs, it 
 would be a waste to leave the data as it is. That is why I'm interested in learning 
-more about how my listening has changed over the years. 
+more about **how my listening has changed over the years**. 
 
 As of December 31st of 2020, I have approximately over 97.000 registered scrobbles 
-over the course of ten years. The size is too big for the scope of this course,
-so I will be limiting to a set number of top tracks each year. This makes it
-easier to explore the data without losing much overview of my general
-listening behaviour.
+and 24.000 unique tracks over the course of ten years. The size is too big for 
+the scope of this course, so I will be limiting to a set number of top tracks 
+each year. This makes it easier to explore the data without losing much overview 
+of my general listening behaviour.
 
 **What are the natural groups or comparison points in your corpus and what is expected between them?**
-My corpus will be divided in years from 2011 (June) to the end of 2020. 
+
+My corpus will be divided in years from 2011 (June) to the end of 2020.
+
+*[Draft: As I grow older, some changes ... teenage/adolescent years are formative,*
+*some consistencies to be expected (post-punk) ... new music styles introduced*
+*between 2015-2017 ... more East Asian music present starting from late 2018]*
 
 **How representative are the tracks in your corpus for the groups you want to compare?**
-I used Spotlistr (2) to collect 60 tracks of each year from my last.fm profile.
-As I've been listening to albums rather than separate songs since 2015-2016,
-I decided to grab **top 10 tracks** and the remaining **50 tracks between #11-100** 
-at random to broaden the scope. Sometimes the tool doesn't pick the correct 
-track (e.g. metadata changed), which I will then adjust manually. If a top 10 song
-is missing, then I'll pick the next (#11 and so on).
 
-Strengths and limitations
+I used Spotlistr [2] to collect 60 tracks of each year from my last.fm profile.
+As I've been listening to albums more than separate songs at some point in life,
+I decided to grab **top 10 tracks** and the remaining **50 tracks between #11-100** 
+at random to broaden the scope. Sometimes the tool didn't pick the correct 
+track due to changes in the metadata, for which I adjusted manually. Examples
+include band name changes, such as 'Viet Cong' to 'Preoccupations' and 
+'Andrew Jackson Jihad' to 'AJJ'. If a top 10 song was missing, then the next song 
+was selected (#11 and so on). I also removed tracks that are considered as intros
+or interludes. *[note to self: add hyperlink for examples]*
+
+My corpus comes with a few limitations:
+
+-  I've only started using the last.fm plugin on my smartphone since 
+February 2015. Before then, I relied on my PC/laptop to log my scrobbles, which
+makes the data between 2011 and 2014 less accurate.
+
+- On a handful occasions, I fell asleep with my music and last.fm still on.
+
+- Some underrepresentation of certain music styles in the top 100. 
+Song 1 of style A has 100 scrobbles, song 2 and 3 of style B have 60 each.
+Style A has 100 scrobbles, and style B has 120. *[need to explain this better...]*
 
 **Identify several tracks in your corpus that are either extremely typical or atypical**
 
+...
 
 ***
 References:
