@@ -288,7 +288,7 @@ Compare above to top track of years 2016 (or other/more years).
 
 ### 1: Introduction - Diving into my **10-years** worth of last.fm **music log**
  
-**What is your corpus, why did you choose it, and what do you think is interesting about it?** 
+<span style="text-decoration:underline">**What is your corpus, why did you choose it, and what do you think is interesting about it?**</span>
 
 Last.fm is an online music database, a music recommender system, and a social 
 networking service, which was founded in the days when MSN, Myspace, and
@@ -309,7 +309,7 @@ the scope of this course, so I will be limiting to a set number of top tracks
 each year. This makes it easier to explore the data without losing much overview 
 of my general listening behaviour.
 
-**What are the natural groups or comparison points in your corpus and what is expected between them?**
+<span style="text-decoration:underline">**What are the natural groups or comparison points in your corpus and what is expected between them?**</span>
 
 My corpus will be divided in years **from June 2011 to the end of 2020**.
 
@@ -317,7 +317,7 @@ My corpus will be divided in years **from June 2011 to the end of 2020**.
 *some consistencies to be expected ... new music styles introduced*
 *... new music discovered along the way]*
 
-**How representative are the tracks in your corpus for the groups you want to compare?**
+<span style="text-decoration:underline">**How representative are the tracks in your corpus for the groups you want to compare?**</span>
 
 I used [Spotlistr](https://www.spotlistr.com/search/lastfm-top-for-time-period) and [Soundiiz](https://soundiiz.com/)
 to transfer **60 tracks per year** from my last.fm profile to Spotify. 
@@ -343,7 +343,7 @@ is more than style A.
 
 - On a handful occasions, I fell asleep with my music and last.fm still on.
 
-**Identify several tracks in your corpus that are either extremely typical or atypical**
+<span style="text-decoration:underline">**Identify several tracks in your corpus that are either extremely typical or atypical**</span>
 
 ...
 
