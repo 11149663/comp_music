@@ -294,27 +294,32 @@ Compare above to top track of years 2016 (or other/more years).
 
 Last.fm is an online music database, a music recommender system, and a social 
 networking service combined, which was founded in the days when MSN, Myspace, and
-Runescape were still a thing. 
-
-In general, the website offers a plugin for you to install on your PC and phone, 
-which can track your listening behaviour. The data is then transferred ("scrobbled")
-to the database and displayed on your personal profile. With the accumulated data, 
-they could also recommend you new/similar music to discover or connect you to people 
-with similar music taste.
-
+Runescape were still a thing. In general, the website offers a plugin for you 
+to install on your PC and phone, which can track your listening behaviour. 
+One listen is then transferred ("scrobbled") to the database and displayed on your 
+personal profile. With the accumulated data, they could also recommend you 
+new/similar music to discover or connect you to people with similar music taste.
 Although the social aspects have been watered down, I've still been using their 
-service ever since June 2011 (1). With the *vast* amount of data up for grabs, it 
+service ever since June 2011 (1). With a *vast* amount of data up for grabs, it 
 would be a waste to leave the data as it is. That is why I'm interested in learning 
-more about how my listening has changed over the years.
+more about how my listening has changed over the years. 
 
-**What are the natural groups or comparison points in your corpus?**
-Time. 
+As of December 31st of 2020, I have approximately over 97.000 registered scrobbles 
+over the course of ten years. The size is too big for the scope of this course,
+so I will be limiting to a set number of top tracks each year. This makes it
+easier to explore the data without losing much overview of my general
+listening behaviour.
 
-**What do you expect to be different among these groups, what do you expect to be the same, and what are you unsure about?**
+**What are the natural groups or comparison points in your corpus and what is expected between them?**
+My corpus will be divided in years from 2011 (June) to the end of 2020. 
 
 **How representative are the tracks in your corpus for the groups you want to compare?**
-
-Materiaal en methode
+I used Spotlistr (2) to collect 60 tracks of each year from my last.fm profile.
+As I've been listening to albums rather than separate songs since 2015-2016,
+I decided to grab **top 10 tracks** and the remaining **50 tracks between #11-100** 
+at random to broaden the scope. Sometimes the tool doesn't pick the correct 
+track (e.g. metadata changed), which I will then adjust manually. If a top 10 song
+is missing, then I'll pick the next (#11 and so on).
 
 Strengths and limitations
 
