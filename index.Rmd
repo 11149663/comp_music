@@ -334,11 +334,12 @@ My corpus comes with a few limitations:
 February 2015. Before then, I relied on my PC/laptop to log my scrobbles, which
 makes the data between 2011 and 2014 less accurate.
 
-- On a handful occasions, I fell asleep with my music and last.fm still on.
+- Possible under-representation of certain music styles in my 60 track selections. 
+As a simple example: song 1 of style A has 100 scrobbles, song 2 and 3 of style B 
+have 60 each. In total, style A has 100 scrobbles, whereas style B has 120, which 
+is more than style A.
 
-- Some underrepresentation of certain music styles in the top 100. 
-Song 1 of style A has 100 scrobbles, song 2 and 3 of style B have 60 each.
-Style A has 100 scrobbles, and style B has 120. *[need to explain this better...]*
+- On a handful occasions, I fell asleep with my music and last.fm still on.
 
 **Identify several tracks in your corpus that are either extremely typical or atypical**
 
