@@ -261,12 +261,19 @@ is more than style A.
 
 - On a handful occasions, I fell asleep with my music and last.fm still on.
 
-<span style="text-decoration:underline">**Identify several tracks in your corpus that are either extremely typical or atypical**</span>
+<span style="text-decoration:underline">**Identify several tracks in your corpus that are either extremely typical or atypical**</span> \
 
-...
+
+<span style="text-decoration:underline">Typical songs:</span> \
+Processed by the Boys - Protomartyr: Musical styles (*post-punk*) from songs like this one have dominated my corpus since 2011. \
+Ferrum - Chihei Hatakeyama: Typical music (*ambient*) I listen to when I need to focus during work or study. \ \
+
+<span style="text-decoration:underline">Atypical songs:</span> \
+Setsuyakuka - Tricot: Classified as *math rock*, a genre which gained prominence in my corpus starting from 2016. \
+Rosebud - U.S. Girls: I don't listen to a lot of music that is considered '*pop*'. A track such as this one, however, stands high in my last.fm charts.\
+Gruppa Krovi - Kino: Alongside Tricot the only two only two *non-English* singing music groups in my all-time top 10.
 
 ***
-
 ![Fig 1. Logo of last.fm](lastfm.jpg){width=100%}
 
 View my corpus per year:
