@@ -96,7 +96,7 @@ y2020 %>%
 
 ### 7.1: Average tempo similar over the years
 
-```{r}
+```{r, include = FALSE}
 
 y2012 %>%
   summarise(mean_tempo = mean(tempo))
@@ -131,11 +131,11 @@ combined_tempo %>%
     angle = 90,
     label="Setsuyakuka", 
     x = 200,
-    y = 3,
+    y = 4.5,
   ) +
   geom_text(
     angle = 90,
-    label = "Parakeet", 
+    label = "", 
     x = 65,
     y = 2,
   ) +
@@ -160,58 +160,49 @@ combined_tempo %>%
 On the left, you'll observe a plotted histogram containing the tempo of every song per two years.
 The average tempo of every time period are similar to each other, with a range between 125 and 135 bpm.
 A minor outlier is 2015-2016, which comes around 134 bpm. This coincidentally correlates to 2016 having
-the highest energy (see 2).
+the highest energy (see 3.1).
 
 ### 7.2: Tempograms
 
-```{r}
+```{r, include = FALSE}
 tricot <- get_tidy_audio_analysis("28IqHczYgXPd2qVM2evm1J")
-beaches <- get_tidy_audio_analysis("0yZWqfxbZ6pzRPKfqmdwn9")
+viet <- get_tidy_audio_analysis("58ITGKThH6gQ4qfkir8kKb")
 ```
 
-```{r}
-tricot %>%
-  tempogram(window_size = 4, hop_size = 1, cyclic = FALSE) %>%
+```{r, echo = FALSE, cache = TRUE}
+viet %>%
+  tempogram(window_size = 4, hop_size = 1, cyclic = TRUE) %>%
   ggplot(aes(x = time, y = bpm, fill = power)) +
   geom_raster() +
   scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  labs(x = "Time (s)", y = "Tempo (BPM)", title = "Unconscious Melody by Preoccupations") +
   theme_classic()
-```
 
-```{r}
 tricot %>%
   tempogram(window_size = 4, hop_size = 1, cyclic = TRUE) %>%
   ggplot(aes(x = time, y = bpm, fill = power)) +
   geom_raster() +
   scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
+  labs(x = "Time (s)", y = "Tempo (BPM)", title = "Setsuyakuka by Tricot") +
   theme_classic()
 ```
-```{r}
-beaches %>%
-  tempogram(window_size = 4, hop_size = 1, cyclic = FALSE) %>%
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
-```
-
-```{r}
-beaches %>%
-  tempogram(window_size = 4, hop_size = 1, cyclic = TRUE) %>%
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)") +
-  theme_classic()
-```
-
 
 ***
 
-jakob
+A typical ("Unconscious Melody") and an atypical ("Setsuyakuka") song were 
+selected to compare its tempograms. The tempo of Unconscious Melody is mostly constant
+between 115-120 bpm. 
+
+The tempo of the song "Setsuyakuka" is, however, less constant. Although the tempo is relatively
+pronounced around 90 bpm, it is still highly varied. Interestingly, the tempo between 150-200 seconds
+seems to be higher than the rest of the song. Listening to the song, it could be possible that 
+the tempogram had a less hard time calculating the tempo, as that same section sounds more quiet than
+the rest.
+
+Settings:
+- window_size = 4
+- hop_size = 1
+- cyclic = TRUE
 
 ### 1: Introduction - Diving into my **10-years** worth of last.fm **music log**
  
