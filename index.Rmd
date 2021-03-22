@@ -121,10 +121,6 @@ indie <-
     y2019 %>% mutate(playlist = "2019-2020"),
     y2020 %>% mutate(playlist = "2019-2020")
   ) 
-
-#    pop %>% mutate(playlist = "Soul Pop") %>% slice_head(n = 20),
-#    party %>% mutate(playlist = "Soul Party") %>% slice_head(n = 20),
-#    workout %>% mutate(playlist = "Soul Workout") %>% slice_head(n = 20)
 ```
 
 ```{r, include = FALSE}
@@ -183,33 +179,6 @@ indie_cv <- indie_features %>% vfold_cv(10) # use first 20% to test remaining 80
 ```
 
 ```{r, include = FALSE}
-knn_model <-
-  nearest_neighbor(neighbors = 1) %>%
-  set_mode("classification") %>% 
-  set_engine("kknn")
-indie_knn <- 
-  workflow() %>% 
-  add_recipe(indie_recipe) %>% 
-  add_model(knn_model) %>% 
-  fit_resamples(
-    indie_cv, 
-    control = control_resamples(save_pred = TRUE)
-  )
-```
-
-```{r, include = FALSE}
-indie_knn %>% get_conf_mat() # get confusion matrix
-```
-
-```{r, include = FALSE}
-indie_knn %>% get_conf_mat() %>% autoplot(type = "mosaic")
-```
-
-```{r, echo = FALSE}
-indie_knn %>% get_conf_mat() %>% autoplot(type = "heatmap")
-```
-
-```{r, include = FALSE}
 tree_model <-
   decision_tree() %>%
   set_mode("classification") %>% 
@@ -222,11 +191,6 @@ indie_tree <-
     indie_cv, 
     control = control_resamples(save_pred = TRUE)
   )
-```
-
-
-```{r}
-indie_knn %>% get_pr() # shows in percentages with 0.33 in this case is random chance
 ```
 
 ```{r, include = FALSE}
@@ -253,6 +217,10 @@ indie_forest <-
   )
 ```
 
+```{r, include = FALSE}
+indie_forest %>% get_pr()
+```
+
 ```{r, echo = FALSE}
 workflow() %>% 
   add_recipe(indie_recipe) %>% 
@@ -267,6 +235,8 @@ workflow() %>%
   coord_flip() +
   theme_minimal() +
   labs(x = NULL, y = "Importance")
+
+indie_forest %>% get_conf_mat() %>% autoplot(type = "heatmap")
 ```
 
 ***
@@ -276,14 +246,26 @@ workflow() %>%
 Some observations
 
 KNN matrix:
-- Periods 2011-2012, 2013-2014 are most distinctive compared to others (to lesser extent: 2019-2020).
-- 2017-2018 has a minor overlap with 2015-2016. Could mean that my listening habits were similar within those years.
-- 
+- Periods 2011-2012, 2013-2014, and 2019-2020 are most distinctive compared to others. \
+- 2017-2018 has a minor overlap with 2015-2016. In the context of my corpus, it could mean that my listening habits were similar between those years.
 
 Random forest tree:
-- Timbre is important (c01, c03, and c11).
-- Instrumentalness is also an important factor. Could be due to math rock (usually without vocals in East Asia) and ambient music.
+- Timbre is important (c01, c03, and c11). \
+- Instrumentalness is also an important factor. Could be due to math rock (usually without vocals in East Asia) and ambient music, of which both genres became prominent on my last.fm starting from 2015-2016. \
 
+Table 1. Accuracy of random forest model:
+
+| Group | Precision | Recall |
+|:------:|:-----|:------|
+| 2011-2012 | 0.444	| 0.467 |	
+| 2013-2014 | 0.824 | 0.875 |
+| 2015-2016 | 0.330 |	0.300 |
+| 2017-2018 | 0.353 |	0.342 |	
+| 2019-2020 | 0.484	| 0.492	|
+
+To do:
+Resize figures.
+Make facetted plots of top features from the random forest.
 
 ### 1: Introduction - Diving into my **10-years** worth of last.fm **music log**
  
