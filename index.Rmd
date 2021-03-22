@@ -27,7 +27,14 @@ library(flexdashboard)
 library(readxl)
 library(grid)
 library(gridExtra)
+library(tidymodels)
+library(ggdendro)
+library(heatmaply)
+library(kknn)
+library(C50)
+library(ranger)
 ```
+
 
 ```{r, include = FALSE}
 # Retrieve my portfolio playlists
@@ -80,129 +87,203 @@ combined_tempo <-
   )
 ```
 
+### **|New|**: Predicting my music listening behaviour over the years
+
 ```{r, include = FALSE}
-y2020 %>%
-  summarise(
-    mean_valence = mean(valence),
-    mean_energy = mean(energy),
-    sd_valence = sd(valence),
-    sd_energy = sd(energy),
-    median_valence = median(valence),
-    median_energy = median(energy),
-    mad_valence = mad(valence),
-    mad_energy = mad(energy)
+get_conf_mat <- function(fit) {
+  outcome <- .get_tune_outcome_names(fit)
+  fit %>% 
+    collect_predictions() %>% 
+    conf_mat(truth = outcome, estimate = .pred_class)
+}  
+
+get_pr <- function(fit) {
+  fit %>% 
+    conf_mat_resampled() %>% 
+    group_by(Prediction) %>% mutate(precision = Freq / sum(Freq)) %>% 
+    group_by(Truth) %>% mutate(recall = Freq / sum(Freq)) %>% 
+    ungroup() %>% filter(Prediction == Truth) %>% 
+    select(class = Prediction, precision, recall)
+}  
+```
+
+```{r, include = FALSE}
+indie <-
+  bind_rows(
+    y2011 %>% mutate(playlist = "2011-2012"),
+    y2012 %>% mutate(playlist = "2011-2012"),
+    y2013 %>% mutate(playlist = "2013-2014"),
+    y2014 %>% mutate(playlist = "2013-2014"),
+    y2015 %>% mutate(playlist = "2015-2016"),
+    y2016 %>% mutate(playlist = "2015-2016"),
+    y2017 %>% mutate(playlist = "2017-2018"),
+    y2018 %>% mutate(playlist = "2017-2018"),
+    y2019 %>% mutate(playlist = "2019-2020"),
+    y2020 %>% mutate(playlist = "2019-2020")
+  ) 
+
+#    pop %>% mutate(playlist = "Soul Pop") %>% slice_head(n = 20),
+#    party %>% mutate(playlist = "Soul Party") %>% slice_head(n = 20),
+#    workout %>% mutate(playlist = "Soul Workout") %>% slice_head(n = 20)
+```
+
+```{r, include = FALSE}
+indie_features <-
+  indie %>%  # For your portfolio, change this to the name of your corpus.
+  add_audio_analysis() %>% 
+  mutate(
+    playlist = factor(playlist),
+    segments = map2(segments, key, compmus_c_transpose),
+    pitches =
+      map(
+        segments,
+        compmus_summarise, pitches,
+        method = "mean", norm = "manhattan"
+      ),
+    timbre =
+      map(
+        segments,
+        compmus_summarise, timbre,
+        method = "mean",
+      )
+  ) %>%
+  mutate(pitches = map(pitches, compmus_normalise, "clr")) %>%
+  mutate_at(vars(pitches, timbre), map, bind_rows) %>%
+  unnest(cols = c(pitches, timbre))
+```
+
+```{r, include = FALSE}
+indie_recipe <-
+  recipe(
+    playlist ~
+      danceability +
+      energy +
+      loudness +
+      speechiness +
+      acousticness +
+      instrumentalness +
+      liveness +
+      valence +
+      tempo +
+      duration +
+      C + `C#|Db` + D + `D#|Eb` +
+      E + `F` + `F#|Gb` + G +
+      `G#|Ab` + A + `A#|Bb` + B +
+      c01 + c02 + c03 + c04 + c05 + c06 +
+      c07 + c08 + c09 + c10 + c11 + c12,
+    data = indie_features,          # Use the same name as the previous block.
+  ) %>%
+  step_center(all_predictors()) %>%
+  step_scale(all_predictors())      # Converts to z-scores.
+  # step_range(all_predictors())    # Sets range to [0, 1]. # to include features such as loudness
+```
+
+```{r, include = FALSE}
+indie_cv <- indie_features %>% vfold_cv(10) # use first 20% to test remaining 80% in chunks of 20%
+```
+
+```{r, include = FALSE}
+knn_model <-
+  nearest_neighbor(neighbors = 1) %>%
+  set_mode("classification") %>% 
+  set_engine("kknn")
+indie_knn <- 
+  workflow() %>% 
+  add_recipe(indie_recipe) %>% 
+  add_model(knn_model) %>% 
+  fit_resamples(
+    indie_cv, 
+    control = control_resamples(save_pred = TRUE)
   )
 ```
 
-### 7.1: Average tempo similar over the years
+```{r, include = FALSE}
+indie_knn %>% get_conf_mat() # get confusion matrix
+```
 
 ```{r, include = FALSE}
+indie_knn %>% get_conf_mat() %>% autoplot(type = "mosaic")
+```
 
-y2012 %>%
-  summarise(mean_tempo = mean(tempo))
-y2014 %>%
-  summarise(mean_tempo = mean(tempo))
-y2016 %>%
-  summarise(mean_tempo = mean(tempo))
-y2018 %>%
-  summarise(mean_tempo = mean(tempo))
-y2020 %>%
-  summarise(mean_tempo = mean(tempo))
+```{r, echo = FALSE}
+indie_knn %>% get_conf_mat() %>% autoplot(type = "heatmap")
+```
+
+```{r, include = FALSE}
+tree_model <-
+  decision_tree() %>%
+  set_mode("classification") %>% 
+  set_engine("C5.0")
+indie_tree <- 
+  workflow() %>% 
+  add_recipe(indie_recipe) %>% 
+  add_model(tree_model) %>% 
+  fit_resamples(
+    indie_cv, 
+    control = control_resamples(save_pred = TRUE)
+  )
 ```
 
 
-```{r, echo = FALSE, message = FALSE}
+```{r}
+indie_knn %>% get_pr() # shows in percentages with 0.33 in this case is random chance
+```
 
-combined_tempo %>%
-  ggplot( 
-    aes(
-      x = tempo,
-      fill = category
-    )
-  ) +
-  scale_fill_manual(values = c("#660060", "#f66d7f", "#f6a97f", "#227788", "#DD8877")) +
-  geom_histogram(binwidth = 5, position = "identity", alpha = 0.5) +
-  geom_vline(xintercept = 127.5315, linetype = "dashed", color = "#660066", size = 1) +
-  geom_vline(xintercept = 126.4983	, linetype = "dashed", color = "#f66d7a", size = 1) +
-  geom_vline(xintercept = 134.5205, linetype = "dashed", color = "#f6a97a", size = 1) +
-  geom_vline(xintercept = 128.7184, linetype = "dashed", color = "#227788", size = 1) +
-  geom_vline(xintercept = 125.7792, linetype = "dashed", color = "#DD8877", size = 1) +
-  geom_text(
-    angle = 90,
-    label="Setsuyakuka", 
-    x = 200,
-    y = 4.5,
-  ) +
-  geom_text(
-    angle = 90,
-    label = "", 
-    x = 65,
-    y = 2,
-  ) +
-  scale_y_continuous(breaks = c(0, 5, 10, 15)) + 
-  theme_light() +
-  labs(
-    x = "Tempo (bpm)",
-    y = "Number of songs",
-    title = "Average tempo over the years"
-  ) +
-  theme_update(plot.title = element_text(hjust = 0.5)) +
-  theme(
-    text = element_text(family = "Bookman"),
-    title = element_text(color = "gray25"),
-    plot.caption = element_text(color = "gray30"),
-    plot.background = element_rect(fill = "white")
+```{r, include = FALSE}
+workflow() %>% 
+  add_recipe(indie_recipe) %>% 
+  add_model(tree_model) %>% 
+  fit(indie_features) %>% 
+  pluck("fit", "fit", "fit") %>%
+  summary()
+```
+
+```{r, include = FALSE}
+forest_model <-
+  rand_forest() %>%
+  set_mode("classification") %>% 
+  set_engine("ranger", importance = "impurity")
+indie_forest <- 
+  workflow() %>% 
+  add_recipe(indie_recipe) %>% 
+  add_model(forest_model) %>% 
+  fit_resamples(
+    indie_cv, 
+    control = control_resamples(save_pred = TRUE)
   )
+```
+
+```{r, echo = FALSE}
+workflow() %>% 
+  add_recipe(indie_recipe) %>% 
+  add_model(forest_model) %>% 
+  fit(indie_features) %>% 
+  pluck("fit", "fit", "fit") %>%
+  ranger::importance() %>% 
+  enframe() %>% 
+  mutate(name = fct_reorder(name, value)) %>% 
+  ggplot(aes(name, value)) + 
+  geom_col() + 
+  coord_flip() +
+  theme_minimal() +
+  labs(x = NULL, y = "Importance")
 ```
 
 ***
 
-On the left, you'll observe a plotted histogram containing the tempo of every song per two years.
-The average tempo of every time period are similar to each other, with a range between 125 and 135 bpm.
-A minor outlier is 2015-2016, which comes around 134 bpm. This coincidentally correlates to 2016 having
-the highest energy (see 3.1).
+[Draft]
 
-### 7.2: Tempograms
+Some observations
 
-```{r, include = FALSE}
-tricot <- get_tidy_audio_analysis("28IqHczYgXPd2qVM2evm1J")
-viet <- get_tidy_audio_analysis("58ITGKThH6gQ4qfkir8kKb")
-```
+KNN matrix:
+- Periods 2011-2012, 2013-2014 are most distinctive compared to others (to lesser extent: 2019-2020).
+- 2017-2018 has a minor overlap with 2015-2016. Could mean that my listening habits were similar within those years.
+- 
 
-```{r, echo = FALSE, cache = TRUE}
-viet %>%
-  tempogram(window_size = 4, hop_size = 1, cyclic = TRUE) %>%
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)", title = "Unconscious Melody by Preoccupations") +
-  theme_classic()
+Random forest tree:
+- Timbre is important (c01, c03, and c11).
+- Instrumentalness is also an important factor. Could be due to math rock (usually without vocals in East Asia) and ambient music.
 
-tricot %>%
-  tempogram(window_size = 4, hop_size = 1, cyclic = TRUE) %>%
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)", title = "Setsuyakuka by Tricot") +
-  theme_classic()
-```
-
-***
-
-A typical ("Unconscious Melody") and an atypical ("Setsuyakuka") song were 
-selected to compare its tempograms. The tempo of Unconscious Melody is mostly constant
-between 115-120 bpm. 
-
-The tempo of the song "Setsuyakuka" is, however, less constant. Although the tempo is relatively
-pronounced around 90 bpm, it is still highly varied. Interestingly, the tempo between 150-200 seconds
-seems to be higher than the rest of the song. Listening to the song, it could be possible that 
-the tempogram had a less hard time calculating the tempo, as that same section sounds more quiet than
-the rest.
-
-Settings:
-- window_size = 4
-- hop_size = 1
-- cyclic = TRUE
 
 ### 1: Introduction - Diving into my **10-years** worth of last.fm **music log**
  
@@ -266,7 +347,7 @@ is more than style A.
 
 <span style="text-decoration:underline">Typical songs:</span> \
 Processed by the Boys - Protomartyr: Musical styles (*post-punk*) from songs like this one have dominated my corpus since 2011. \
-Ferrum - Chihei Hatakeyama: Typical music (*ambient*) I listen to when I need to focus during work or study. \ \
+Ferrum - Chihei Hatakeyama: Typical music (*ambient*) I listen to when I need to focus during work or study (especially since university). \ \
 
 <span style="text-decoration:underline">Atypical songs:</span> \
 Setsuyakuka - Tricot: Classified as *math rock*, a genre which gained prominence in my corpus starting from 2016. \
@@ -583,7 +664,7 @@ Things to consider:
 Compare above to top track of years 2016, 2018 (Rosebud) or other/more years.
 
 
-### 6: **|New|** Chordograms
+### 6: Chordograms
 
 ```{r, include = FALSE}
 
@@ -788,6 +869,116 @@ I used "norm = manhattan; distance = manhattan" for both chordograms, and
 Things to consider:
 Compare above to top track of years 2016 (or other/more years).
 
+
+### 7.1: Average tempo similar over the years
+
+```{r, include = FALSE}
+
+y2012 %>%
+  summarise(mean_tempo = mean(tempo))
+y2014 %>%
+  summarise(mean_tempo = mean(tempo))
+y2016 %>%
+  summarise(mean_tempo = mean(tempo))
+y2018 %>%
+  summarise(mean_tempo = mean(tempo))
+y2020 %>%
+  summarise(mean_tempo = mean(tempo))
+```
+
+
+```{r, echo = FALSE, message = FALSE}
+
+combined_tempo %>%
+  ggplot( 
+    aes(
+      x = tempo,
+      fill = category
+    )
+  ) +
+  scale_fill_manual(values = c("#660060", "#f66d7f", "#f6a97f", "#227788", "#DD8877")) +
+  geom_histogram(binwidth = 5, position = "identity", alpha = 0.5) +
+  geom_vline(xintercept = 127.5315, linetype = "dashed", color = "#660066", size = 1) +
+  geom_vline(xintercept = 126.4983	, linetype = "dashed", color = "#f66d7a", size = 1) +
+  geom_vline(xintercept = 134.5205, linetype = "dashed", color = "#f6a97a", size = 1) +
+  geom_vline(xintercept = 128.7184, linetype = "dashed", color = "#227788", size = 1) +
+  geom_vline(xintercept = 125.7792, linetype = "dashed", color = "#DD8877", size = 1) +
+  geom_text(
+    angle = 90,
+    label="Setsuyakuka", 
+    x = 200,
+    y = 4.5,
+  ) +
+  geom_text(
+    angle = 90,
+    label = "", 
+    x = 65,
+    y = 2,
+  ) +
+  scale_y_continuous(breaks = c(0, 5, 10, 15)) + 
+  theme_light() +
+  labs(
+    x = "Tempo (bpm)",
+    y = "Number of songs",
+    title = "Average tempo over the years"
+  ) +
+  theme_update(plot.title = element_text(hjust = 0.5)) +
+  theme(
+    text = element_text(family = "Bookman"),
+    title = element_text(color = "gray25"),
+    plot.caption = element_text(color = "gray30"),
+    plot.background = element_rect(fill = "white")
+  )
+```
+
+***
+
+On the left, you'll observe a plotted histogram containing the tempo of every song per two years.
+The average tempo of every time period are similar to each other, with a range between 125 and 135 bpm.
+A minor outlier is 2015-2016, which comes around 134 bpm. This coincidentally correlates to 2016 having
+the highest energy (see 3.1).
+
+### 7.2: Tempograms
+
+```{r, include = FALSE}
+tricot <- get_tidy_audio_analysis("28IqHczYgXPd2qVM2evm1J")
+viet <- get_tidy_audio_analysis("58ITGKThH6gQ4qfkir8kKb")
+```
+
+```{r, echo = FALSE, cache = TRUE}
+viet %>%
+  tempogram(window_size = 4, hop_size = 1, cyclic = TRUE) %>%
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)", title = "Unconscious Melody by Preoccupations") +
+  theme_classic()
+
+tricot %>%
+  tempogram(window_size = 4, hop_size = 1, cyclic = TRUE) %>%
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)", title = "Setsuyakuka by Tricot") +
+  theme_classic()
+```
+
+***
+
+A typical ("Unconscious Melody") and an atypical ("Setsuyakuka") song were 
+selected to compare its tempograms. The tempo of Unconscious Melody is mostly constant
+between 115-120 bpm. 
+
+The tempo of the song "Setsuyakuka" is, however, less constant. Although the tempo is relatively
+pronounced around 90 bpm, it is still highly varied. Interestingly, the tempo between 150-200 seconds
+seems to be higher than the rest of the song. Listening to the song, it could be possible that 
+the tempogram had a less hard time calculating the tempo, as that same section sounds more quiet than
+the rest.
+
+Settings:
+- window_size = 4
+- hop_size = 1
+- cyclic = TRUE
 
 ### Conclusions
 
