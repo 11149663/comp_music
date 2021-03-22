@@ -245,11 +245,11 @@ indie_forest %>% get_conf_mat() %>% autoplot(type = "heatmap")
 
 Some observations
 
-KNN matrix:
+KNN matrix: \
 - Periods 2011-2012, 2013-2014, and 2019-2020 are most distinctive compared to others. \
 - 2017-2018 has a minor overlap with 2015-2016. In the context of my corpus, it could mean that my listening habits were similar between those years.
 
-Random forest tree:
+Random forest tree: \
 - Timbre is important (c01, c03, and c11). \
 - Instrumentalness is also an important factor. Could be due to math rock (usually without vocals in East Asia) and ambient music, of which both genres became prominent on my last.fm starting from 2015-2016. \
 
@@ -266,6 +266,7 @@ Table 1. Accuracy of random forest model:
 To do:
 Resize figures.
 Make facetted plots of top features from the random forest.
+Using only the top 10 most influential features and replot everything.
 
 ### 1: Introduction - Diving into my **10-years** worth of last.fm **music log**
  
