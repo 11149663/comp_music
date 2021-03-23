@@ -33,8 +33,9 @@ library(heatmaply)
 library(kknn)
 library(C50)
 library(ranger)
+library(RColorBrewer)
+library(Polychrome)
 ```
-
 
 ```{r, include = FALSE}
 # Retrieve my portfolio playlists
@@ -87,8 +88,6 @@ combined_tempo <-
   )
 ```
 
-### **|New|**: Predicting my music listening behaviour over the years
-
 ```{r, include = FALSE}
 get_conf_mat <- function(fit) {
   outcome <- .get_tune_outcome_names(fit)
@@ -106,6 +105,8 @@ get_pr <- function(fit) {
     select(class = Prediction, precision, recall)
 }  
 ```
+
+### **|New|**: Predicting my music listening behaviour over the years
 
 ```{r, include = FALSE}
 indie <-
@@ -293,11 +294,13 @@ of my general listening behaviour.
 
 <span style="text-decoration:underline">**What are the natural groups or comparison points in your corpus and what is expected between them?**</span>
 
-My corpus will be divided in years **from June 2011 to the end of 2020**.
+My corpus will be divided in years **from June 2011 to the end of 2020**. 
 
-*[Draft: As I grow older, some changes ... teenage/adolescent years are formative,*
-*some consistencies to be expected ... new music styles introduced*
-*... new music discovered along the way]*
+
+[Draft: As I grow older, some changes … teenage/adolescent years are formative, some consistencies to be expected … new music styles introduced … new music discovered along the way]
+
+In
+the next slide, I will...
 
 <span style="text-decoration:underline">**How representative are the tracks in your corpus for the groups you want to compare?**</span>
 
@@ -353,42 +356,79 @@ View my corpus per year:
 - 2019
 - 2020
 
-### 2: How much did I spend on listening to music?
+### 2: Topping the artist charts from UK to Taiwan {data-commentary-width = 500}
 
 ```{r, echo = FALSE}
-scrobbles <- read_excel("C:/Users/Jason/Desktop/CompMus/Scrobbles.xlsx")
+scrobbles <- read_excel("C:/Users/Jason/Desktop/CompMus/Scrobbles_year.xlsx")
 
+# https://stackoverflow.com/questions/9227389/ordering-stacks-by-size-in-a-ggplot2-stacked-bar-graph
+scrobbles$Group <- reorder(scrobbles$Group, scrobbles$Scrobbles)
+scrobbles$Group <- factor(scrobbles$Group, levels=rev(levels(scrobbles$Group)))
+
+# https://stackoverflow.com/questions/34164687/r-how-to-change-the-color-scheme-14-colors-needed-in-ggplot
+# mycolors = c(brewer.pal(name="Dark2", n = 8), brewer.pal(name="Paired", n = 12), 
+#             brewer.pal(name="Set2", n = 8))
+
+# https://stackoverflow.com/questions/15282580/how-to-generate-a-number-of-most-distinctive-colors-in-r
+n <- 38
+qual_col_pals = brewer.pal.info[brewer.pal.info$category == 'qual',]
+col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
+```
+
+```{r, echo = FALSE}
 listens <- scrobbles %>%
-  ggplot(aes(x = period, y = scrobbles)) +
-  theme_light() +
-  ggtitle("Number of 'scrobbles' per quartile") +
-  geom_col(width = 0.9) +
-  labs(x="year/quartile", y="number of scrobbles") + 
-  theme(axis.text.x = element_text(angle = 60, hjust = 1))
+  ggplot(aes(x = Year, y = Scrobbles, fill = Group, color = Group)) +
+  ggtitle("Number of 'scrobbles' per year including Top 5") +
+  geom_col(width = 0.9, alpha = 0.8) +
+  labs(x="year", y="number of scrobbles") + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position = "none") +
+  scale_fill_manual(values = col_vector) +
+  scale_color_manual(values = col_vector) + 
+  
+  geom_vline(xintercept = 3.9, linetype = 2, size = 0.3, alpha = 0.3) +
+    annotate(geom = "text", x = 3.9, y = 11000, label = "<b>May 2014</b>:\n'Eindexamens'", size = 3) + 
+  
+  geom_vline(xintercept = 4.65, linetype = 2, size = 0.3, alpha = 0.3, color = "red") +
+    annotate(geom = "text", x = 4.65, y = 13500, label = "<b>Jan 2015</b>:\nNew Phone + Spotify", size = 3) +
+
+  geom_vline(xintercept = 6.2, linetype = 2, size = 0.3, alpha = 0.3) +
+    annotate(geom = "text", x = 6.2, y = 15000, label = "<b>Sep 2016</b>:\nStart UvA", size = 3) +
+
+  geom_vline(xintercept = 8.1, linetype = 2, size = 0.3, alpha = 0.3) +
+    annotate(geom = "text", x = 8.1, y = 11000, label = "<b>Aug 2018</b>:\nMoved to Hong Kong", size = 3) +
+  
+  geom_vline(xintercept = 9.8, linetype = 2, size = 0.3, alpha = 0.3) +
+    annotate(geom = "text", x = 9.8, y = 9000, label = "<b>Mar 2020</b>:\nCovid-19 Pandemic", size = 3) +
+  
+  annotate(geom = "text", x = 1, y = 9073, label = "9373", size = 2.5) +
+  annotate(geom = "text", x = 2, y = 7483, label = "7783", size = 2.5) +
+  annotate(geom = "text", x = 3, y = 6301, label = "6601", size = 2.5) +
+  annotate(geom = "text", x = 4, y = 7280, label = "7580", size = 2.5) +
+  annotate(geom = "text", x = 5, y = 10278, label = "10578", size = 2.5) +
+  annotate(geom = "text", x = 6, y = 17473, label = "17773", size = 2.5) +
+  annotate(geom = "text", x = 7, y = 8999, label = "9299", size = 2.5) +
+  annotate(geom = "text", x = 8, y = 7025, label = "7325", size = 2.5) +
+  annotate(geom = "text", x = 9, y = 6085, label = "6385", size = 2.5) +
+  annotate(geom = "text", x = 10, y = 4192, label = "4492", size = 2.5)
 
 ggplotly(listens)
 ```
 
+
 ***
-[W06: Draft]
 
-Things to do:
+*The interactive barplot shows how many scrobbles were recorded from June 11th,*
+*2011 to December 31st, 2020, including the totals at the top of each bar.* 
+*Zooming in on the bottom of the bars, you can find the top 5 most listened artists* 
+*of each year. Also included are events that could have influenced my listening behaviour.*
 
-- Add dashed vertical lines with relevant events, which could explain changes in listening behaviour. Examples:
+Looking at all my recorded scrobbles as a whole, you can observe that it increased
+significantly in [2015](https://www.last.fm/user/wutsmainaem/library/artists?from=2015-01-01&rangetype=year), after which it peaked in [2016](https://www.last.fm/user/wutsmainaem/library/artists?from=2016-01-01&rangetype=year) at 17773. As I mentioned in the previous slide, this increase corresponds to me getting a new smartphone in 2015, which made it easier for me to use Spotify with a last.fm plugin (from 249 in December, 2014 to 1635 in January, 2015).
 
-2014/2: "CE middelbare school" (correspond to lower valence as seen in next figures?)
+From here on out, scrobbles declined continuously down to 4492 in [2020](https://www.last.fm/user/wutsmainaem/library?from=2020-01-01&rangetype=year). 
+It seems that the COVID-19 pandemic had an influence on my scrobbles, as the 6-month average following the lockdown in March was around 375, whereas the average was 540 six months prior.
 
-Pre-2015: Only 'scrobbles' from PC/laptop.
-
-2015/1: New phone and subscribed to Spotify with last.fm
-
-2016/3: Start UvA
-
-2018/3: Half year in Hong Kong
-
-- Show within each bar the proportion of top-60 songs (probably easier to do per year rather than per quartile).
-
-- Turn above text into a readable story.
+On a surface level, other interesting developments can be observed when looking at the top 5 most listened artists over the years. In 2011 and 2012, my top 5s were dominated by artists from the UK (9 out of 10). The top 5s of 2013/2014 diversified with artists coming from other places than the UK (4/10). From 2015 onwards, the top 5s can be typified in several ways: "noisy" music (Preoccupations/Aburadako/Death Grips) and math rock (tricot/No Party). My exposure to modern music from East Asia has had a noticeable effect on my top 5s starting from late 2018. This kind of music was so dominant that it overtook the entire top 5 in 2019 and most of 2018 and 2020.
 
 ### 3.1: Mood features - From sad, sadder, saddest...
 
@@ -455,6 +495,8 @@ ggplotly(valence_vs_energy_pt2)
 
 ***
 [W06: Draft]
+
+2014/2: "CE middelbare school" (correspond to lower valence as seen in 2)
 
 ### 4: Investigating the scope of my outliers in **chromagrams**
 
