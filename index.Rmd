@@ -426,7 +426,7 @@ It seems that there's one particlar genre in my corpus that keeps coming back th
 
 ### B1: Investigating the scope of my outliers in **chromagrams** {data-commentary-width=300}
 
-```{r, include=FALSE, cache=TRUE}
+```{r, include=FALSE}
 
 # JUHACHI 2FghAESlnAFukLy5j2Ascp
 # CHIHEI 4NV9wYTFbFuOndIUUyE5Pi
@@ -579,7 +579,7 @@ chihei_chroma %>%
   scale_fill_viridis_c()
 ```
 
-```{r, include=FALSE, cache=TRUE}
+```{r, include=FALSE}
 
 #plot_grid(joy_p, kino_p, viet_p, proto_p, toe_p, chihei_p,
 #          labels = c("1a", "1b", "1c", "2a", "2b", "2c"),
@@ -601,7 +601,7 @@ Song by Chihei Hatakeyama is interesting, as it mostly dominated by major notes.
 
 ### B2: Self-similarity Matrices {data-commentary-width=300}
 
-```{r, include=FALSE, cache=TRUE}
+```{r, include=FALSE}
 
 # JOY 1Bq65xKgu0kjSUMUlfWyPl (Transmission) heel veel korte herhalingen
 # KINO 4g87T7h8coshsA1zJjFFbG (A Star Called Sun) enige structuur
@@ -951,7 +951,7 @@ tricot <- get_tidy_audio_analysis("28IqHczYgXPd2qVM2evm1J")
 viet <- get_tidy_audio_analysis("58ITGKThH6gQ4qfkir8kKb")
 ```
 
-```{r, include = FALSE, cache = TRUE}
+```{r, include = FALSE}
 #viet %>%
  # tempogram(window_size = 4, hop_size = 1, cyclic = FALSE) %>%
   #ggplot(aes(x = time - 20, y = bpm, fill = power)) +
@@ -985,7 +985,7 @@ pronounced around 380 bpm in the first half, it goes all over the place in the s
 
 ### C1: Predicting my music listening behaviour over the years {data-commentary-width=300}
 
-```{r, include = FALSE, cache = TRUE}
+```{r, include = FALSE}
 indie <-
   bind_rows(
     y2011 %>% mutate(playlist = "2011-2012"),
@@ -1001,7 +1001,7 @@ indie <-
   ) 
 ```
 
-```{r, include = FALSE, cache = TRUE}
+```{r, include = FALSE, cache = FALSE}
 indie_features <-
   indie %>%  # For your portfolio, change this to the name of your corpus.
   add_audio_analysis() %>% 
@@ -1026,7 +1026,7 @@ indie_features <-
   unnest(cols = c(pitches, timbre))
 ```
 
-```{r, include = FALSE, cache = TRUE}
+```{r, include = FALSE}
 indie_recipe <-
   recipe(
     playlist ~
