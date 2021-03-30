@@ -4,13 +4,12 @@ author: "Jason Z."
 date: "Feb/Mar 2021"
 output:
   flexdashboard::flex_dashboard:
-    storyboard: TRUE
+    storyboard: true
     theme: flatly
 ---
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
 # stackoverflow.com/questions/33402920/using-ggplot2-and-special-characters
 # switch between reading error messages and reading track labels
 # Sys.setlocale("LC_ALL", "Japanese") 
@@ -35,6 +34,7 @@ library(C50)
 library(ranger)
 library(RColorBrewer)
 library(Polychrome)
+library(cowplot)
 ```
 
 ```{r, include = FALSE}
@@ -53,18 +53,12 @@ y2020 <- get_playlist_audio_features("", "1HN2I323QTNX5jofgP8fiC")
 
 ```{r, include = FALSE}
 # Mutate into category:year
-combined_year_pt1 <- 
+combined_years <- 
   bind_rows(
     y2011 %>% mutate(category = "2011", mode = ifelse(mode == 0, "Minor", "Major")),
     y2012 %>% mutate(category = "2012", mode = ifelse(mode == 0, "Minor", "Major")),
     y2013 %>% mutate(category = "2013", mode = ifelse(mode == 0, "Minor", "Major")),
     y2014 %>% mutate(category = "2014", mode = ifelse(mode == 0, "Minor", "Major")),
-    y2015 %>% mutate(category = "2015", mode = ifelse(mode == 0, "Minor", "Major")),
-    y2016 %>% mutate(category = "2016", mode = ifelse(mode == 0, "Minor", "Major"))
-  )
-
-combined_year_pt2 <- 
-  bind_rows(
     y2015 %>% mutate(category = "2015", mode = ifelse(mode == 0, "Minor", "Major")),
     y2016 %>% mutate(category = "2016", mode = ifelse(mode == 0, "Minor", "Major")),
     y2017 %>% mutate(category = "2017", mode = ifelse(mode == 0, "Minor", "Major")),
@@ -106,170 +100,10 @@ get_pr <- function(fit) {
 }  
 ```
 
-### **|New|**: Predicting my music listening behaviour over the years
+**Introduction** {.storyboard}
+===============================================================
 
-```{r, include = FALSE}
-indie <-
-  bind_rows(
-    y2011 %>% mutate(playlist = "2011-2012"),
-    y2012 %>% mutate(playlist = "2011-2012"),
-    y2013 %>% mutate(playlist = "2013-2014"),
-    y2014 %>% mutate(playlist = "2013-2014"),
-    y2015 %>% mutate(playlist = "2015-2016"),
-    y2016 %>% mutate(playlist = "2015-2016"),
-    y2017 %>% mutate(playlist = "2017-2018"),
-    y2018 %>% mutate(playlist = "2017-2018"),
-    y2019 %>% mutate(playlist = "2019-2020"),
-    y2020 %>% mutate(playlist = "2019-2020")
-  ) 
-```
-
-```{r, include = FALSE}
-indie_features <-
-  indie %>%  # For your portfolio, change this to the name of your corpus.
-  add_audio_analysis() %>% 
-  mutate(
-    playlist = factor(playlist),
-    segments = map2(segments, key, compmus_c_transpose),
-    pitches =
-      map(
-        segments,
-        compmus_summarise, pitches,
-        method = "mean", norm = "manhattan"
-      ),
-    timbre =
-      map(
-        segments,
-        compmus_summarise, timbre,
-        method = "mean",
-      )
-  ) %>%
-  mutate(pitches = map(pitches, compmus_normalise, "clr")) %>%
-  mutate_at(vars(pitches, timbre), map, bind_rows) %>%
-  unnest(cols = c(pitches, timbre))
-```
-
-```{r, include = FALSE}
-indie_recipe <-
-  recipe(
-    playlist ~
-      danceability +
-      energy +
-      loudness +
-      speechiness +
-      acousticness +
-      instrumentalness +
-      liveness +
-      valence +
-      tempo +
-      duration +
-      C + `C#|Db` + D + `D#|Eb` +
-      E + `F` + `F#|Gb` + G +
-      `G#|Ab` + A + `A#|Bb` + B +
-      c01 + c02 + c03 + c04 + c05 + c06 +
-      c07 + c08 + c09 + c10 + c11 + c12,
-    data = indie_features,          # Use the same name as the previous block.
-  ) %>%
-  step_center(all_predictors()) %>%
-  step_scale(all_predictors())      # Converts to z-scores.
-  # step_range(all_predictors())    # Sets range to [0, 1]. # to include features such as loudness
-```
-
-```{r, include = FALSE}
-indie_cv <- indie_features %>% vfold_cv(10) # use first 20% to test remaining 80% in chunks of 20%
-```
-
-```{r, include = FALSE}
-tree_model <-
-  decision_tree() %>%
-  set_mode("classification") %>% 
-  set_engine("C5.0")
-indie_tree <- 
-  workflow() %>% 
-  add_recipe(indie_recipe) %>% 
-  add_model(tree_model) %>% 
-  fit_resamples(
-    indie_cv, 
-    control = control_resamples(save_pred = TRUE)
-  )
-```
-
-```{r, include = FALSE}
-workflow() %>% 
-  add_recipe(indie_recipe) %>% 
-  add_model(tree_model) %>% 
-  fit(indie_features) %>% 
-  pluck("fit", "fit", "fit") %>%
-  summary()
-```
-
-```{r, include = FALSE}
-forest_model <-
-  rand_forest() %>%
-  set_mode("classification") %>% 
-  set_engine("ranger", importance = "impurity")
-indie_forest <- 
-  workflow() %>% 
-  add_recipe(indie_recipe) %>% 
-  add_model(forest_model) %>% 
-  fit_resamples(
-    indie_cv, 
-    control = control_resamples(save_pred = TRUE)
-  )
-```
-
-```{r, include = FALSE}
-indie_forest %>% get_pr()
-```
-
-```{r, echo = FALSE}
-workflow() %>% 
-  add_recipe(indie_recipe) %>% 
-  add_model(forest_model) %>% 
-  fit(indie_features) %>% 
-  pluck("fit", "fit", "fit") %>%
-  ranger::importance() %>% 
-  enframe() %>% 
-  mutate(name = fct_reorder(name, value)) %>% 
-  ggplot(aes(name, value)) + 
-  geom_col() + 
-  coord_flip() +
-  theme_minimal() +
-  labs(x = NULL, y = "Importance")
-
-indie_forest %>% get_conf_mat() %>% autoplot(type = "heatmap")
-```
-
-***
-
-[Draft]
-
-Some observations
-
-KNN matrix: \
-- Periods 2011-2012, 2013-2014, and 2019-2020 are most distinctive compared to others. \
-- 2017-2018 has a minor overlap with 2015-2016. In the context of my corpus, it could mean that my listening habits were similar between those years.
-
-Random forest tree: \
-- Timbre is important (c01, c03, and c11). \
-- Instrumentalness is also an important factor. Could be due to math rock (usually without vocals in East Asia) and ambient music, of which both genres became prominent on my last.fm starting from 2015-2016. \
-
-Table 1. Accuracy of random forest model:
-
-| Group | Precision | Recall |
-|:------:|:-----|:------|
-| 2011-2012 | 0.444	| 0.467 |	
-| 2013-2014 | 0.824 | 0.875 |
-| 2015-2016 | 0.330 |	0.300 |
-| 2017-2018 | 0.353 |	0.342 |	
-| 2019-2020 | 0.484	| 0.492	|
-
-To do:
-Resize figures.
-Make facetted plots of top features from the random forest.
-Using only the top 10 most influential features and replot everything.
-
-### 1: Introduction - Diving into my **10-years** worth of last.fm **music log**
+### Diving into my **10-years** worth of last.fm **music log** {data-commentary-width=300}
  
 <span style="text-decoration:underline">**What is your corpus, why did you choose it, and what do you think is interesting about it?**</span>
 
@@ -295,12 +129,9 @@ of my general listening behaviour.
 <span style="text-decoration:underline">**What are the natural groups or comparison points in your corpus and what is expected between them?**</span>
 
 My corpus will be divided in years **from June 2011 to the end of 2020**. 
-
-
-[Draft: As I grow older, some changes … teenage/adolescent years are formative, some consistencies to be expected … new music styles introduced … new music discovered along the way]
-
-In
-the next slide, I will...
+According to a [NYTimes-article](https://www.nytimes.com/2018/02/10/opinion/sunday/favorite-songs.html), our musical taste is established during our (formative) teenage years. If that is the case,
+I'd expect that a certain music style from my teenage years would show up throughout my corpus.
+Apart from that, I still expect changes in my music preferences, as I grow older.
 
 <span style="text-decoration:underline">**How representative are the tracks in your corpus for the groups you want to compare?**</span>
 
@@ -330,7 +161,6 @@ is more than style A.
 
 <span style="text-decoration:underline">**Identify several tracks in your corpus that are either extremely typical or atypical**</span> \
 
-
 <span style="text-decoration:underline">Typical songs:</span> \
 Processed by the Boys - Protomartyr: Musical styles (*post-punk*) from songs like this one have dominated my corpus since 2011. \
 Ferrum - Chihei Hatakeyama: Typical music (*ambient*) I listen to when I need to focus during work or study (especially since university). \ \
@@ -341,7 +171,7 @@ Rosebud - U.S. Girls: I don't listen to a lot of music that is considered '*pop*
 Gruppa Krovi - Kino: Alongside Tricot the only two only two *non-English* singing music groups in my all-time top 10.
 
 ***
-![Fig 1. Logo of last.fm](lastfm.jpg){width=100%}
+![Logo of last.fm](lastfm.jpg){width=100%}
 
 View my corpus per year:
 
@@ -356,7 +186,10 @@ View my corpus per year:
 - 2019
 - 2020
 
-### 2: Topping the artist charts from UK to Taiwan {data-commentary-width = 500}
+**Track-level features** {.storyboard}
+===============================================================
+
+### A1: **How much** have I listened to music **over the years**? {data-commentary-width=500}
 
 ```{r, echo = FALSE}
 scrobbles <- read_excel("C:/Users/Jason/Desktop/CompMus/Scrobbles_year.xlsx")
@@ -378,7 +211,7 @@ col_vector = unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_co
 ```{r, echo = FALSE}
 listens <- scrobbles %>%
   ggplot(aes(x = Year, y = Scrobbles, fill = Group, color = Group)) +
-  ggtitle("Number of 'scrobbles' per year including Top 5") +
+  ggtitle("Number of recorded 'scrobbles' per year including top 5 most listened artists") +
   geom_col(width = 0.9, alpha = 0.8) +
   labs(x="year", y="number of scrobbles") + 
   theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position = "none") +
@@ -386,34 +219,52 @@ listens <- scrobbles %>%
   scale_color_manual(values = col_vector) + 
   
   geom_vline(xintercept = 3.9, linetype = 2, size = 0.3, alpha = 0.3) +
-    annotate(geom = "text", x = 3.9, y = 11000, label = "<b>May 2014</b>:\n'Eindexamens'", size = 3) + 
+    annotate(geom = "text", x = 3.9, y = 11000, label = "<b>May 2014</b>:\n'Eindexamens'", size = 4) + 
   
   geom_vline(xintercept = 4.65, linetype = 2, size = 0.3, alpha = 0.3, color = "red") +
-    annotate(geom = "text", x = 4.65, y = 13500, label = "<b>Jan 2015</b>:\nNew Phone + Spotify", size = 3) +
+    annotate(geom = "text", x = 4.65, y = 13000, label = "<b>Jan 2015</b>:\nNew Phone + Spotify", size = 4) +
 
-  geom_vline(xintercept = 6.2, linetype = 2, size = 0.3, alpha = 0.3) +
-    annotate(geom = "text", x = 6.2, y = 15000, label = "<b>Sep 2016</b>:\nStart UvA", size = 3) +
+  geom_vline(xintercept = 5.2, linetype = 2, size = 0.3, alpha = 0.3) +
+    annotate(geom = "text", x = 5.2, y = 15000, label = "<b>Sep 2015</b>:\nStart UvA", size = 4) +
 
   geom_vline(xintercept = 8.1, linetype = 2, size = 0.3, alpha = 0.3) +
-    annotate(geom = "text", x = 8.1, y = 11000, label = "<b>Aug 2018</b>:\nMoved to Hong Kong", size = 3) +
+    annotate(geom = "text", x = 8.1, y = 13000, label = "<b>Aug 2018</b>:\nMoved to Hong Kong", size = 4) +
   
   geom_vline(xintercept = 9.8, linetype = 2, size = 0.3, alpha = 0.3) +
-    annotate(geom = "text", x = 9.8, y = 9000, label = "<b>Mar 2020</b>:\nCovid-19 Pandemic", size = 3) +
+    annotate(geom = "text", x = 9.8, y = 11000, label = "<b>Mar 2020</b>:\nCovid-19 Pandemic", size = 4) +
   
-  annotate(geom = "text", x = 1, y = 9073, label = "9373", size = 2.5) +
-  annotate(geom = "text", x = 2, y = 7483, label = "7783", size = 2.5) +
-  annotate(geom = "text", x = 3, y = 6301, label = "6601", size = 2.5) +
-  annotate(geom = "text", x = 4, y = 7280, label = "7580", size = 2.5) +
-  annotate(geom = "text", x = 5, y = 10278, label = "10578", size = 2.5) +
-  annotate(geom = "text", x = 6, y = 17473, label = "17773", size = 2.5) +
-  annotate(geom = "text", x = 7, y = 8999, label = "9299", size = 2.5) +
-  annotate(geom = "text", x = 8, y = 7025, label = "7325", size = 2.5) +
-  annotate(geom = "text", x = 9, y = 6085, label = "6385", size = 2.5) +
-  annotate(geom = "text", x = 10, y = 4192, label = "4492", size = 2.5)
+  annotate(geom = "text", x = 1, y = 9073, label = "Total: 9373", size = 3.5) +
+  annotate(geom = "text", x = 1, y = 3100, label = "Top 5: 2800 (29.9%)", size = 2.5) +
+  
+  annotate(geom = "text", x = 2, y = 7483, label = "Total: 7783", size = 3.5) +
+  annotate(geom = "text", x = 2, y = 2542, label = "Top 5: 2242 (28.8%)", size = 2.5) +
+  
+  annotate(geom = "text", x = 3, y = 6301, label = "Total: 6601", size = 3.5) +
+  annotate(geom = "text", x = 3, y = 2097, label = "Top 5: 1797 (27.2%)", size = 2.5) +
+  
+  annotate(geom = "text", x = 4, y = 7280, label = "Total: 7580", size = 3.5) +
+  annotate(geom = "text", x = 4, y = 1736, label = "Top 5: 1436 (19.0%)", size = 2.5) +
+  
+  annotate(geom = "text", x = 5, y = 10278, label = "Total: 10578", size = 3.5) +
+  annotate(geom = "text", x = 5, y = 2802, label = "Top 5: 2502 (23.7%)", size = 2.5) +
+  
+  annotate(geom = "text", x = 6, y = 17473, label = "Total: 17773", size = 3.5) +
+  annotate(geom = "text", x = 6, y = 4216, label = "Top 5: 3916 (22.0%)", size = 2.5) +
+  
+  annotate(geom = "text", x = 7, y = 8999, label = "Total: 9299", size = 3.5) +
+  annotate(geom = "text", x = 7, y = 1841, label = "Top 5: 1541 (16.6%)", size = 2.5) +
+  
+  annotate(geom = "text", x = 8, y = 7025, label = "Total: 7325", size = 3.5) +
+  annotate(geom = "text", x = 8, y = 1739, label = "Top 5: 1439 (19.6%)", size = 2.5) +
+  
+  annotate(geom = "text", x = 9, y = 6085, label = "Total: 6385", size = 3.5) +
+  annotate(geom = "text", x = 9, y = 1722, label = "Top 5: 1422 (22.3%)", size = 2.5) +
+  
+  annotate(geom = "text", x = 10, y = 4192, label = "Total: 4492", size = 3.5) +
+  annotate(geom = "text", x = 10, y = 1404, label = "Top 5: 1104 (24.6%)", size = 2.5)
 
 ggplotly(listens)
 ```
-
 
 ***
 
@@ -422,116 +273,180 @@ ggplotly(listens)
 *Zooming in on the bottom of the bars, you can find the top 5 most listened artists* 
 *of each year. Also included are events that could have influenced my listening behaviour.*
 
-Looking at all my recorded scrobbles as a whole, you can observe that it increased
-significantly in [2015](https://www.last.fm/user/wutsmainaem/library/artists?from=2015-01-01&rangetype=year), after which it peaked in [2016](https://www.last.fm/user/wutsmainaem/library/artists?from=2016-01-01&rangetype=year) at 17773. As I mentioned in the previous slide, this increase corresponds to me getting a new smartphone in 2015, which made it easier for me to use Spotify with a last.fm plugin (from 249 in December, 2014 to 1635 in January, 2015).
+Looking at all my recorded scrobbles from start to finish, you can observe that it increased
+significantly in [2015](https://www.last.fm/user/wutsmainaem/library/artists?from=2015-01-01&rangetype=year), after which it **peaked in [2016](https://www.last.fm/user/wutsmainaem/library/artists?from=2016-01-01&rangetype=year)** at 17773. As I mentioned in the previous slide, this increase can be explained by the fact that I started using the last.fm plugin on my phone, after I had purchased one which supported the plugin (from 249 in December, 2014 to 1635 in January, 2015). Another possible reason for the increase is that it marked a **new chapter as a university student**. It was during this time that I spent more time listening to music during study sessions, and made effort to explore new music by spending (too much) on live music events.
 
 From here on out, scrobbles declined continuously down to 4492 in [2020](https://www.last.fm/user/wutsmainaem/library?from=2020-01-01&rangetype=year). 
 It seems that the COVID-19 pandemic had an influence on my scrobbles, as the 6-month average following the lockdown in March was around 375, whereas the average was 540 six months prior.
 
-On a surface level, other interesting developments can be observed when looking at the top 5 most listened artists over the years. In 2011 and 2012, my top 5s were dominated by artists from the UK (9 out of 10). The top 5s of 2013/2014 diversified with artists coming from other places than the UK (4/10). From 2015 onwards, the top 5s can be typified in several ways: "noisy" music (Preoccupations/Aburadako/Death Grips) and math rock (tricot/No Party). My exposure to modern music from East Asia has had a noticeable effect on my top 5s starting from late 2018. This kind of music was so dominant that it overtook the entire top 5 in 2019 and most of 2018 and 2020.
+On a surface level, other interesting developments can be observed when looking at the top 5 most listened artists over the years. **In 2011 and 2012**, my top 5s were **dominated by UK artists** (9 out of 10). The top 5s of **2013/2014 diversified** with artists coming from other places than the UK (4/10). My exposure to **music produced in East Asia** has had a noticeable effect on my top 5s starting from late 2018. This kind of music was so dominant that it **overtook the entire top 5 in 2019** and most of 2018 and 2020.
 
-### 3.1: Mood features - From sad, sadder, saddest...
+### A2: How did my **music preferences** change over time based on **Spotify track features**? {data-commentary-width=500}
 
-```{r, echo = FALSE}
-valence_vs_energy_pt1 <- combined_year_pt1 %>%
-  ggplot(aes(x = valence,
-             y = energy,
-             color = mode,
-             size = tempo,
-             label = track.name)) +
-  facet_wrap(~category) +
-  geom_point(position = 'jitter', 
-             alpha = 0.6) +
-  geom_rug(size = 0.20) +
-  ggtitle("Track-level comparison") +
-  theme_light() +
-  scale_color_manual(values = c("Minor" = "#227788", "Major" = "#DD8877"),
-                     guide = "legend") +
-  scale_x_continuous(breaks = c(0, 0.50, 1),
-                     minor_breaks = NULL) +
-  scale_y_continuous(breaks = c(0, 0.50, 1),
-                     minor_breaks = NULL) +
-  scale_size_continuous(range = c(0, 5),
-                        guide = "none")
-
-ggplotly(valence_vs_energy_pt1)
-```
-***
-[W06: Draft]
-
-### 3.2: Mood features - ... to fast, loud, and noisy (relatively speaking).
-
-```{r, echo = FALSE}
-valence_vs_energy_pt2 <- combined_year_pt2 %>%
-  ggplot(aes(x = valence,
-             y = energy,
-             color = mode,
-             size = tempo,
-             label = track.name)) +
-  facet_wrap(~category) +
-  geom_point(position = 'jitter', 
-             alpha = 0.6) +
-  geom_rug(size = 0.20) +
-  ggtitle("Track-level comparison") +
-  theme_light() +
-  scale_color_manual(values = c("Minor" = "#227788", "Major" = "#DD8877"),
-                     guide = "legend") +
-  scale_x_continuous(breaks = c(0, 0.50, 1),
-                     minor_breaks = NULL) +
-  scale_y_continuous(breaks = c(0, 0.50, 1),
-                     minor_breaks = NULL) +
-  scale_size_continuous(range = c(0, 5),
-                        guide = "none")
-
-ggplotly(valence_vs_energy_pt2)
-```
 ```{r, include = FALSE}
-#combined_year_pt1 %>%
-#  mutate(artists = select(!!!track.artists, name))
+y2020 %>%
+  summarise(
+    mean_acousticness = mean(acousticness),
+    mean_danceability = mean(danceability),
+    mean_energy = mean(energy),
+    mean_instrumentalness = mean(instrumentalness),
+    mean_liveness = mean(liveness),
+    mean_speechiness = mean(speechiness),
+    mean_valence = mean(valence)
+  )
+
+data_means <- read_excel("C:/Users/Jason/Desktop/CompMus/mean_features.xlsx")
+```
+
+```{r, echo = FALSE}
+
+mean_progress <- data_means %>%
+  ggplot(aes(x = Year)) +
+  ggtitle("Mean Spotify Audio Features per year") +
+
+  geom_line(aes(y = Acousticness), group = 1, color = "red") +
+  geom_point(aes(x=Year, y=Acousticness), col='red') +
   
-# scrobbles$scrobbles
+  geom_line(aes(y = Danceability), group = 1, color = "orange") + 
+  geom_point(aes(x=Year, y=Danceability), col='orange') +
+  
+  geom_line(aes(y = Energy), group = 1, color = "brown") +
+  geom_point(aes(x=Year, y=Energy), col='brown') +
+  
+  geom_line(aes(y = Instrumentalness), group = 1, color = "green") +
+  geom_point(aes(x=Year, y=Instrumentalness), col='green') +
+  
+  geom_line(aes(y = Liveness), group = 1, color = "blue") +
+  geom_point(aes(x=Year, y=Liveness), col='blue') +
+  
+  geom_line(aes(y = Speechiness), group = 1, color = "purple") +
+  geom_point(aes(x=Year, y=Speechiness), col='purple') +
+  
+  geom_line(aes(y = Valence), group = 1) +
+  geom_point(aes(x=Year, y=Valence)) +
+  
+  labs(x="year", y="feature level [0 - 1]") + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 1), legend.position="right")
+  
+ggplotly(mean_progress)
+
 ```
 
 
 ***
-[W06: Draft]
 
-2014/2: "CE middelbare school" (correspond to lower valence as seen in 2)
+Spotify offers a number of [track-level features](https://developer.spotify.com/documentation/web-api/reference/#object-audiofeaturesobject), 
+which are used to characterize tracks that are available on their platform.
+The plot on the left shows how these features have developed over time 
+by calculating the means of the selected 60 tracks per year.
 
-### 4: Investigating the scope of my outliers in **chromagrams**
+It looks like **speechiness** and **liveness** did not change much.
+The former reflects the fact that I am (proportionally) **not much of a rap/hip-hop** 
+**listener**, as this type of music requires values between 0.33 and 0.66. **Valence**
+rose slightly early on, but stabilized around the middle at 0.5, whereas **energy**
+experienced a noticiable shift upwards in 2016. More on this will follow in
+the next slide.
+
+**Acousticness** increased steadily in the early years, but declined after 2014
+and did not reach higher than 0.2 since then.
+One feature seems to have increased permanently, which is **instrumentalness**,
+hovering mostly above 0.3 since 2015. This change could be explained by a **growth
+in listening to instrumental music**, such as 
+[Toe](https://www.last.fm/user/wutsmainaem/library/music/toe) and 
+[GoGo Penguin](https://www.last.fm/user/wutsmainaem/library/music/GoGo+Penguin).
+Another music genre that could've influenced the increased instrumental levels around 2015 
+is **ambient**([Klara Lewis](https://www.last.fm/user/wutsmainaem/library/music/Klara+Lewis), 
+[Ryuichi Sakamoto](https://www.last.fm/user/wutsmainaem/library/music/%E5%9D%82%E6%9C%AC%E9%BE%8D%E4%B8%80)),
+as this was **my preferred genre during study sessions**. Also, the introduction of this genre could have pushed the **acousticness** levels further down since 2015.
+
+
+### A3: Selected tracks are mainly **high in energy and diverse in valence** {data-commentary-width=500}
 
 ```{r, echo = FALSE}
+valence_vs_energy <- combined_years %>%
+  ggplot(aes(x = valence,
+             y = energy,
+             color = mode,
+             size = instrumentalness,
+             label = track.name)) +
+  facet_wrap(~category) +
+  geom_point(position = 'jitter', 
+             alpha = 0.6) +
+  geom_rug(size = 0.20) +
+  ggtitle("Track-level feature comparison: Energy vs Valence vs Instrumentalness vs Mode") +
+  theme_light() +
+  scale_color_manual(values = c("Minor" = "#227788", "Major" = "#DD8877"),
+                     guide = "legend") +
+  scale_x_continuous(breaks = c(0, 0.50, 1),
+                     minor_breaks = NULL) +
+  scale_y_continuous(breaks = c(0, 0.50, 1),
+                     minor_breaks = NULL) +
+  scale_size_continuous(range = c(0.5, 5),
+                        guide = "none") +
+  geom_text(aes(x = valence, 
+                y = energy, 
+                label = label),
+            data = tibble(label = c("Jùhachi"), 
+                          category = c("2015"), 
+                          valence = c(0.65),
+                          energy = c(0.17)
+                          ),
+            color = "darkred",
+            size = 3,
+            family = "mono"
+  )
+  
 
-juhachi_chroma <-
-  get_tidy_audio_analysis("2FghAESlnAFukLy5j2Ascp") %>%
+ggplotly(valence_vs_energy)
+```
+***
+![Spotify's energy and valence translated into four moods](mood.jpg){width=30%}
+
+*The 'moods' of each track in every year can be presented by plotting the energy feature*
+*against valence. Instrumentalness (size) and mode (colour) are displayed in the graphs as well.*
+*The plot is made interactive, enabling you to zoom in on individual tracks.*
+
+Overall, most songs in every year skew towards high energy levels (> 5.0), especially between 2016 and 2020.
+Valence on the other hand shows a wider range, spanning across the entire spectrum. From this can be concluded
+that the music I listened to in the past ten years are **mostly happy or angry in general**.
+
+An interesting observation is that my listening habits gradually became **'sadder' from 2012 to 2014**. What's also striking is that my tracks **rarely** go deep into the '**relaxed**' quadrant with the exception of one song in 2015 (*Jùhachi*). Looking at the size of each point, you can clearly see that the instrumentalness increased substantially from 2015 as mentioned earlier. 
+
+Based on these three visualizations, my logs can be categorized into (give or take) four periods:
+
+- 'Mid-VWO'-era: UK-produced music (see A1)
+- 'Late-vwo'-era: early diversity (A1), sadder music (A3)
+- 'UvA'-era: most recorded scrobbles (A1), peak energy (A2), increase instrumentalness (A2)
+- 'Post-HK'-era: music produced in East Asia (A1)
+
+It seems that there's one particlar genre in my corpus that keeps coming back throughout the years, namely post-punk. In the corpus, this genre is represented by [Joy Division](https://en.wikipedia.org/wiki/Joy_Division) (Mid-VWO), [Kino](https://en.wikipedia.org/wiki/Kino_(band)) (Late-VWO), [Preoccupations](https://en.wikipedia.org/wiki/Preoccupations) (UvA), and [Protomartyr](https://en.wikipedia.org/wiki/Protomartyr_(band)) (UvA/Post-HK). I assume that this is what the NYTimes-writer meant with musical taste peaking as teens. Therefore, I will be examining the most listened song of each band in the following slides.
+
+**Audio Analysis** {.storyboard}
+===============================================================
+
+### B1: Investigating the scope of my outliers in **chromagrams** {data-commentary-width=300}
+
+```{r, include=FALSE, cache=TRUE}
+
+# JUHACHI 2FghAESlnAFukLy5j2Ascp
+# CHIHEI 4NV9wYTFbFuOndIUUyE5Pi
+# BOLT 7DNRAyfqNpN0qzrS5JmJwY
+
+# JOY 1Bq65xKgu0kjSUMUlfWyPl (Transmission)
+# KINO 4g87T7h8coshsA1zJjFFbG (A Star Called Sun)
+# VIET 3d5lGpqxg1cMEYrgTaGxZy (Continental Shelf)
+# PROTO 6hVVhORwKxGgJ9PC2jaA2R (Processed by the Boys)
+# TOE 0wJ2HYa7Do5nZYpnysJ3xd (C) high instrumentalness - math rock
+# CHIHEI 4NV9wYTFbFuOndIUUyE5Pi (Far) high instrumentalness - ambient
+
+
+joy_chroma <-
+  get_tidy_audio_analysis("1Bq65xKgu0kjSUMUlfWyPl") %>%
   select(segments) %>%
   unnest(segments) %>%
   select(start, duration, pitches)
 
-juhachi_chroma %>%
-  mutate(pitches = map(pitches, compmus_normalise, "manhattan")) %>% # manhattan
-  compmus_gather_chroma() %>% 
-  ggplot(
-    aes(
-      x = start + duration / 2,
-      width = duration,
-      y = pitch_class,
-      fill = value
-    )
-  ) +
-  geom_tile() +
-  ggtitle("Jùhachi by Sylvain Chauveau") +
-  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
-  theme_minimal() +
-  scale_fill_viridis_c()
-
-chihei_chroma <-
-  get_tidy_audio_analysis("4NV9wYTFbFuOndIUUyE5Pi") %>%
-  select(segments) %>%
-  unnest(segments) %>%
-  select(start, duration, pitches)
-
-chihei_chroma %>%
+joy_chroma %>%
   mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>% # euclidean
   compmus_gather_chroma() %>% 
   ggplot(
@@ -543,19 +458,19 @@ chihei_chroma %>%
     )
   ) +
   geom_tile() +
-  ggtitle("Far from the Atmosphere by Chihei Hatakeyama") +
+  ggtitle("Transmission by Joy Division") +
   labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
   theme_minimal() +
   scale_fill_viridis_c()
 
-lbolt_chroma <-
-  get_tidy_audio_analysis("7DNRAyfqNpN0qzrS5JmJwY") %>%
+kino_chroma <-
+  get_tidy_audio_analysis("4g87T7h8coshsA1zJjFFbG") %>%
   select(segments) %>%
   unnest(segments) %>%
   select(start, duration, pitches)
 
-lbolt_chroma %>%
-  mutate(pitches = map(pitches, compmus_normalise, "chebyshev")) %>% # chebyshev
+kino_chroma %>%
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>% # euclidean
   compmus_gather_chroma() %>% 
   ggplot(
     aes(
@@ -566,15 +481,115 @@ lbolt_chroma %>%
     )
   ) +
   geom_tile() +
-  ggtitle("Dead Cowboy by Lightning Bolt") +
+  ggtitle("A Star Called Sun by Kino") +
   labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
   theme_minimal() +
   scale_fill_viridis_c()
 
+viet_chroma <-
+  get_tidy_audio_analysis("3d5lGpqxg1cMEYrgTaGxZy") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+
+viet_chroma %>%
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>% # euclidean
+  compmus_gather_chroma() %>% 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  ggtitle("Continental Shelf by Preoccupations") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  theme_minimal() +
+  scale_fill_viridis_c()
+
+proto_chroma <-
+  get_tidy_audio_analysis("6hVVhORwKxGgJ9PC2jaA2R") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+
+proto_chroma %>%
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>% # chebyshev
+  compmus_gather_chroma() %>% 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  ggtitle("Processed by the Boys by Protomartyr") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  theme_minimal() +
+  scale_fill_viridis_c()
+
+toe_chroma <-
+  get_tidy_audio_analysis("0wJ2HYa7Do5nZYpnysJ3xd") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+
+toe_chroma %>%
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>%
+  compmus_gather_chroma() %>% 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  ggtitle("C by Toe") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  theme_minimal() +
+  scale_fill_viridis_c()
+
+chihei_chroma <-
+  get_tidy_audio_analysis("4NV9wYTFbFuOndIUUyE5Pi") %>%
+  select(segments) %>%
+  unnest(segments) %>%
+  select(start, duration, pitches)
+
+chihei_chroma %>%
+  mutate(pitches = map(pitches, compmus_normalise, "euclidean")) %>%
+  compmus_gather_chroma() %>% 
+  ggplot(
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = pitch_class,
+      fill = value
+    )
+  ) +
+  geom_tile() +
+  ggtitle("Far from the Atmosphere by Chihei H.") +
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  theme_minimal() +
+  scale_fill_viridis_c()
 ```
 
+```{r, include=FALSE, cache=TRUE}
+
+#plot_grid(joy_p, kino_p, viet_p, proto_p, toe_p, chihei_p,
+#          labels = c("1a", "1b", "1c", "2a", "2b", "2c"),
+#          nrow=2)
+
+```
+
+![Chromagrams](chroma.jpg){width=100%}
+
 ***
-[W07: Draft]
 
 Outlier: Song's very reliant on silence with occasional ...
 
@@ -582,58 +597,21 @@ Things to consider:
 Most listened song vs favourite song of 2020.
 Compare multiple low valence/energy songs and see if they have something in common.
 
-### Optional: DTW of Dreams cover by Faye Wong
+Song by Chihei Hatakeyama is interesting, as it mostly dominated by major notes.
 
-```{r, echo = FALSE}
-faye <-
-  get_tidy_audio_analysis("1SGPQAdXXDbcRX8kGoBiN3") %>%
-  select(segments) %>%
-  unnest(segments) %>%
-  select(start, duration, pitches)
+### B2: Self-similarity Matrices {data-commentary-width=300}
 
-dolores <-
-  get_tidy_audio_analysis("4JGKZS7h4Qa16gOU3oNETV") %>%
-  select(segments) %>%
-  unnest(segments) %>%
-  select(start, duration, pitches)
-```
+```{r, include=FALSE, cache=TRUE}
 
-```{r, echo = FALSE}
+# JOY 1Bq65xKgu0kjSUMUlfWyPl (Transmission) heel veel korte herhalingen
+# KINO 4g87T7h8coshsA1zJjFFbG (A Star Called Sun) enige structuur
+# VIET 3d5lGpqxg1cMEYrgTaGxZy (Continental Shelf)
+# PROTO 6hVVhORwKxGgJ9PC2jaA2R (Processed by the Boys)
+# TOE 0wJ2HYa7Do5nZYpnysJ3xd (C) high instrumentalness - math rock
+# CHIHEI 4NV9wYTFbFuOndIUUyE5Pi (Far) high instrumentalness - ambient, helemaal niets in te herkennen
 
-compmus_long_distance(
-  dolores %>% mutate(pitches = map(pitches, compmus_normalise, "euclidean")),
-  faye %>% mutate(pitches = map(pitches, compmus_normalise, "euclidean")),
-  feature = pitches,
-  method = "angular"
-) %>%
-  ggplot(
-    aes(
-      x = xstart + xduration / 2,
-      width = xduration,
-      y = ystart + yduration / 2,
-      height = yduration,
-      fill = d
-    )
-  ) +
-  geom_tile() +
-  coord_equal() +
-  labs(x = "Dreams by Cranberries", y = "Dreamer by Faye Wong") +
-  theme_minimal() +
-  scale_fill_viridis_c(guide = NULL)
-
-```
-
-***
-[W07: Draft]
-
-Reasoning on inclusion: In top 2014. Might become an outtake if it doesn't
-fit in my portfolio story.
-
-### 5: Self-similarity Matrices
-
-```{r, echo = FALSE}
 boys <-
-  get_tidy_audio_analysis("6hVVhORwKxGgJ9PC2jaA2R") %>%
+  get_tidy_audio_analysis("1Bq65xKgu0kjSUMUlfWyPl") %>%
   compmus_align(bars, segments) %>%
   select(bars) %>%
   unnest(bars) %>%
@@ -643,10 +621,10 @@ boys <-
                      method = "rms", norm = "euclidean"))
 bind_rows(
   boys %>% 
-    compmus_self_similarity(pitches, "euclidean") %>% 
+    compmus_self_similarity(pitches, "cosine") %>% 
     mutate(d = d / max(d), type = "Chroma"),
   boys %>% 
-    compmus_self_similarity(timbre, "euclidean") %>% 
+    compmus_self_similarity(timbre, "cosine") %>% 
     mutate(d = d / max(d), type = "Timbre")
   ) %>%
   mutate() %>% 
@@ -661,13 +639,14 @@ bind_rows(
   ) +
   geom_tile() +
   coord_fixed() +
-  ggtitle("Processed by the Boys by Protomartyr") +
+  ggtitle("Far from the Atmosphere by Chihei H.") +
   facet_wrap(~type) +
   theme_classic() +
   scale_fill_viridis_c() +
   labs(x = "", y = "")
 ```
 
+![Self-Similarity Matrices](ssm.jpg){width=100%}
 
 ***
 [W08: Draft]
@@ -689,7 +668,7 @@ Things to consider:
 Compare above to top track of years 2016, 2018 (Rosebud) or other/more years.
 
 
-### 6: Chordograms
+### B3: Chordograms {data-commentary-width=300}
 
 ```{r, include = FALSE}
 
@@ -895,7 +874,7 @@ Things to consider:
 Compare above to top track of years 2016 (or other/more years).
 
 
-### 7.1: Average tempo similar over the years
+### B4: Average tempo similar over the years {data-commentary-width=300}
 
 ```{r, include = FALSE}
 
@@ -921,6 +900,7 @@ combined_tempo %>%
       fill = category
     )
   ) +
+  facet_wrap(~category) +
   scale_fill_manual(values = c("#660060", "#f66d7f", "#f6a97f", "#227788", "#DD8877")) +
   geom_histogram(binwidth = 5, position = "identity", alpha = 0.5) +
   geom_vline(xintercept = 127.5315, linetype = "dashed", color = "#660066", size = 1) +
@@ -929,16 +909,15 @@ combined_tempo %>%
   geom_vline(xintercept = 128.7184, linetype = "dashed", color = "#227788", size = 1) +
   geom_vline(xintercept = 125.7792, linetype = "dashed", color = "#DD8877", size = 1) +
   geom_text(
-    angle = 90,
-    label="Setsuyakuka", 
-    x = 200,
-    y = 4.5,
-  ) +
-  geom_text(
-    angle = 90,
-    label = "", 
-    x = 65,
-    y = 2,
+    aes(x = tempo, y = y, label = label),
+    data = tibble(label = c("Setsuyakuka"),
+                  angle = 90,
+                  category = "2015-2016", 
+                  tempo = c(200),
+                  y = c(2)),
+    color = "darkred",
+    size = 1.5,
+    family = "mono"
   ) +
   scale_y_continuous(breaks = c(0, 5, 10, 15)) + 
   theme_light() +
@@ -958,56 +937,224 @@ combined_tempo %>%
 
 ***
 
+Unavailable: Loudness, Key, Mode, Tempo, Time Signature
+
 On the left, you'll observe a plotted histogram containing the tempo of every song per two years.
 The average tempo of every time period are similar to each other, with a range between 125 and 135 bpm.
-A minor outlier is 2015-2016, which comes around 134 bpm. This coincidentally correlates to 2016 having
-the highest energy (see 3.1).
+A minor outlier is 2015-2016, which comes around 134 bpm. This correlates to 2016 having
+the highest energy feature (see A3).
 
-### 7.2: Tempograms
+### B5: Tempograms {data-commentary-width=300}
 
 ```{r, include = FALSE}
 tricot <- get_tidy_audio_analysis("28IqHczYgXPd2qVM2evm1J")
 viet <- get_tidy_audio_analysis("58ITGKThH6gQ4qfkir8kKb")
 ```
 
-```{r, echo = FALSE, cache = TRUE}
-viet %>%
-  tempogram(window_size = 4, hop_size = 1, cyclic = TRUE) %>%
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)", title = "Unconscious Melody by Preoccupations") +
-  theme_classic()
+```{r, include = FALSE, cache = TRUE}
+#viet %>%
+ # tempogram(window_size = 4, hop_size = 1, cyclic = FALSE) %>%
+  #ggplot(aes(x = time - 20, y = bpm, fill = power)) +
+  #geom_raster() +
+  #scale_fill_viridis_c(guide = "none") +
+  #labs(x = "Time (s)", y = "Tempo (BPM)", title = "Unconscious Melody by Preoccupations") +
+  #theme_classic()
 
-tricot %>%
-  tempogram(window_size = 4, hop_size = 1, cyclic = TRUE) %>%
-  ggplot(aes(x = time, y = bpm, fill = power)) +
-  geom_raster() +
-  scale_fill_viridis_c(guide = "none") +
-  labs(x = "Time (s)", y = "Tempo (BPM)", title = "Setsuyakuka by Tricot") +
-  theme_classic()
+#tricot %>%
+ # tempogram(window_size = 4, hop_size = 1, cyclic = FALSE) %>%
+  #ggplot(aes(x = time, y = bpm, fill = power)) +
+  #geom_raster() +
+  #scale_fill_viridis_c(guide = "none") +
+  #labs(x = "Time (s)", y = "Tempo (BPM)", title = "Setsuyakuka by Tricot") +
+  #theme_classic()
+```
+
+![Tempograms](tempogram.jpg){width=100%}
+
+***
+
+For the tempogram analysis, a typical post-punk ("Unconscious Melody") and an atypical math-rock ("Setsuyakuka") song were selected to compare its rhythmic differences. The tempo of Unconscious Melody is mostly constant
+around 220 bpm, with an occasional switch towards 470 bpm. 
+
+The tempo of the song "Setsuyakuka" is, however, less constant. Although the tempo is relatively
+pronounced around 380 bpm in the first half, it goes all over the place in the second. Especially between 150-220 seconds seems to be very diverse compared to the rest of the song. Listening to the song, it could be possible that the tempogram had a less hard time calculating the tempo, as that section sounds less 'noisy' than the other parts.
+
+
+**Classification** {.storyboard}
+===============================================================
+
+### C1: Predicting my music listening behaviour over the years {data-commentary-width=300}
+
+```{r, include = FALSE, cache = TRUE}
+indie <-
+  bind_rows(
+    y2011 %>% mutate(playlist = "2011-2012"),
+    y2012 %>% mutate(playlist = "2011-2012"),
+    y2013 %>% mutate(playlist = "2013-2014"),
+    y2014 %>% mutate(playlist = "2013-2014"),
+    y2015 %>% mutate(playlist = "2015-2016"),
+    y2016 %>% mutate(playlist = "2015-2016"),
+    y2017 %>% mutate(playlist = "2017-2018"),
+    y2018 %>% mutate(playlist = "2017-2018"),
+    y2019 %>% mutate(playlist = "2019-2020"),
+    y2020 %>% mutate(playlist = "2019-2020")
+  ) 
+```
+
+```{r, include = FALSE, cache = TRUE}
+indie_features <-
+  indie %>%  # For your portfolio, change this to the name of your corpus.
+  add_audio_analysis() %>% 
+  mutate(
+    playlist = factor(playlist),
+    segments = map2(segments, key, compmus_c_transpose),
+    pitches =
+      map(
+        segments,
+        compmus_summarise, pitches,
+        method = "mean", norm = "manhattan"
+      ),
+    timbre =
+      map(
+        segments,
+        compmus_summarise, timbre,
+        method = "mean",
+      )
+  ) %>%
+  mutate(pitches = map(pitches, compmus_normalise, "clr")) %>%
+  mutate_at(vars(pitches, timbre), map, bind_rows) %>%
+  unnest(cols = c(pitches, timbre))
+```
+
+```{r, include = FALSE, cache = TRUE}
+indie_recipe <-
+  recipe(
+    playlist ~
+      danceability +
+      energy +
+      loudness +
+      speechiness +
+      acousticness +
+      instrumentalness +
+      liveness +
+      valence +
+      tempo +
+      duration +
+      C + `C#|Db` + D + `D#|Eb` +
+      E + `F` + `F#|Gb` + G +
+      `G#|Ab` + A + `A#|Bb` + B +
+      c01 + c02 + c03 + c04 + c05 + c06 +
+      c07 + c08 + c09 + c10 + c11 + c12,
+    data = indie_features,          # Use the same name as the previous block.
+  ) %>%
+  step_center(all_predictors()) %>%
+  step_scale(all_predictors())      # Converts to z-scores.
+  # step_range(all_predictors())    # Sets range to [0, 1]. # to include features such as loudness
+```
+
+```{r, include = FALSE}
+indie_cv <- indie_features %>% vfold_cv(10) # use first 20% to test remaining 80% in chunks of 20%
+```
+
+```{r, include = FALSE}
+tree_model <-
+  decision_tree() %>%
+  set_mode("classification") %>% 
+  set_engine("C5.0")
+indie_tree <- 
+  workflow() %>% 
+  add_recipe(indie_recipe) %>% 
+  add_model(tree_model) %>% 
+  fit_resamples(
+    indie_cv, 
+    control = control_resamples(save_pred = TRUE)
+  )
+```
+
+```{r, include = FALSE, cache = TRUE}
+workflow() %>% 
+  add_recipe(indie_recipe) %>% 
+  add_model(tree_model) %>% 
+  fit(indie_features) %>% 
+  pluck("fit", "fit", "fit") %>%
+  summary()
+```
+
+```{r, include = FALSE}
+forest_model <-
+  rand_forest() %>%
+  set_mode("classification") %>% 
+  set_engine("ranger", importance = "impurity")
+indie_forest <- 
+  workflow() %>% 
+  add_recipe(indie_recipe) %>% 
+  add_model(forest_model) %>% 
+  fit_resamples(
+    indie_cv, 
+    control = control_resamples(save_pred = TRUE)
+  )
+```
+
+```{r, include = FALSE, cache = TRUE}
+indie_forest %>% get_pr()
+```
+
+```{r, echo = FALSE, cache = TRUE}
+workflow() %>% 
+  add_recipe(indie_recipe) %>% 
+  add_model(forest_model) %>% 
+  fit(indie_features) %>% 
+  pluck("fit", "fit", "fit") %>%
+  ranger::importance() %>% 
+  enframe() %>% 
+  mutate(name = fct_reorder(name, value)) %>% 
+  ggplot(aes(name, value)) + 
+  geom_col() + 
+  coord_flip() +
+  theme_minimal() +
+  labs(x = NULL, y = "Importance")
+
+indie_forest %>% get_conf_mat() %>% autoplot(type = "heatmap")
 ```
 
 ***
 
-A typical ("Unconscious Melody") and an atypical ("Setsuyakuka") song were 
-selected to compare its tempograms. The tempo of Unconscious Melody is mostly constant
-between 115-120 bpm. 
+[Draft]
 
-The tempo of the song "Setsuyakuka" is, however, less constant. Although the tempo is relatively
-pronounced around 90 bpm, it is still highly varied. Interestingly, the tempo between 150-200 seconds
-seems to be higher than the rest of the song. Listening to the song, it could be possible that 
-the tempogram had a less hard time calculating the tempo, as that same section sounds more quiet than
-the rest.
+Some observations
 
-Settings:
-- window_size = 4
-- hop_size = 1
-- cyclic = TRUE
+KNN matrix: \
+- Periods 2011-2012, 2013-2014, and 2019-2020 are most distinctive compared to others. \
+- 2017-2018 has a minor overlap with 2015-2016. In the context of my corpus, it could mean that my listening habits were similar between those years.
 
-### Conclusions
+Random forest tree: \
+- Timbre is important (c01, c03, and c11). \
+- Instrumentalness is also an important factor. Could be due to math rock (usually without vocals in East Asia) and ambient music, of which both genres became prominent on my last.fm starting from 2015-2016. \
+
+Table 1. Accuracy of random forest model:
+
+| Group | Precision | Recall |
+|:------:|:-----|:------|
+| 2011-2012 | 0.444	| 0.467 |	
+| 2013-2014 | 0.824 | 0.875 |
+| 2015-2016 | 0.330 |	0.300 |
+| 2017-2018 | 0.353 |	0.342 |	
+| 2019-2020 | 0.484	| 0.492	|
+
+To do:
+Resize figures.
+Make facetted plots of top features from the random forest.
+Using only the top 10 most influential features and replot everything.
+
+**Conclusions** {.storyboard}
+===============================================================
+
+Column 1
+---------------------------------------------------------------
 
 TODO
 
-***
-TODO
+Relevant link: https://www.theverge.com/2018/2/12/17003076/spotify-data-shows-songs-teens-adult-taste-music
+
+Column 2 
+---------------------------------------------------------------
