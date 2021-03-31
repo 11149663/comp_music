@@ -12,8 +12,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 # stackoverflow.com/questions/33402920/using-ggplot2-and-special-characters
 # switch between reading error messages and reading track labels
-# Sys.setlocale("LC_ALL", "Japanese") 
-# options(encoding = "UTF-8")
+Sys.setlocale("LC_ALL", "Japanese") 
+options(encoding = "UTF-8")
 ```
 
 ```{r, include = FALSE}
@@ -366,7 +366,7 @@ as this was **my preferred genre during study sessions**. Also, the introduction
 valence_vs_energy <- combined_years %>%
   ggplot(aes(x = valence,
              y = energy,
-             color = mode,
+             color = acousticness,
              size = instrumentalness,
              label = track.name)) +
   facet_wrap(~category) +
@@ -375,8 +375,9 @@ valence_vs_energy <- combined_years %>%
   geom_rug(size = 0.20) +
   ggtitle("Track-level feature comparison: Energy vs Valence vs Instrumentalness vs Mode") +
   theme_light() +
-  scale_color_manual(values = c("Minor" = "#227788", "Major" = "#DD8877"),
-                     guide = "legend") +
+  scale_color_gradient(low = "#227788", high = "#DD8877") +
+#  scale_color_manual(values = c("Minor" = "#227788", "Major" = "#DD8877"),
+#                     guide = "legend") +
   scale_x_continuous(breaks = c(0, 0.50, 1),
                      minor_breaks = NULL) +
   scale_y_continuous(breaks = c(0, 0.50, 1),
@@ -410,21 +411,20 @@ Overall, most songs in every year skew towards high energy levels (> 5.0), espec
 Valence on the other hand shows a wider range, spanning across the entire spectrum. From this can be concluded
 that the music I listened to in the past ten years are **mostly happy or angry in general**.
 
-An interesting observation is that my listening habits gradually became **'sadder' from 2012 to 2014**. What's also striking is that my tracks **rarely** go deep into the '**relaxed**' quadrant with the exception of one song in 2015 (*Jùhachi*). Looking at the size of each point, you can clearly see that the instrumentalness increased substantially from 2015 as mentioned earlier. 
+An interesting observation is that my listening habits gradually became **'sadder' from 2012 to 2014**. What's also striking is that my tracks **rarely** go deep into the '**relaxed**' quadrant with the exception of one song in 2015 (*Jùhachi*). Looking at the size of each point, you can clearly see that the instrumentalness increased substantially from 2015 as mentioned earlier. The instrumentalness feature is, however, not always accurate. In 2018, many songs high on energy are categorized as highly instrumental, while clearly having vocals. This is one example of Spotify not being accurate sometimes.
 
 Based on these three visualizations, my logs can be categorized into (give or take) four periods:
-
-- 'Mid-VWO'-era: UK-produced music (see A1)
-- 'Late-vwo'-era: early diversity (A1), sadder music (A3)
-- 'UvA'-era: most recorded scrobbles (A1), peak energy (A2), increase instrumentalness (A2)
-- 'Post-HK'-era: music produced in East Asia (A1)
+- "2011-2012" or 'Mid-VWO'-era: UK-produced music (see A1)
+- "2013-2014" or 'Late-VWO'-era: early diversity (A1), sadder music (A3)
+- "2015-2018" or 'UvA'-era: most recorded scrobbles (A1), peak energy (A2), increase instrumentalness (A2)
+- "2019-2020" or 'Post-HK'-era: music produced in East Asia (A1)
 
 It seems that there's one particlar genre in my corpus that keeps coming back throughout the years, namely post-punk. In the corpus, this genre is represented by [Joy Division](https://en.wikipedia.org/wiki/Joy_Division) (Mid-VWO), [Kino](https://en.wikipedia.org/wiki/Kino_(band)) (Late-VWO), [Preoccupations](https://en.wikipedia.org/wiki/Preoccupations) (UvA), and [Protomartyr](https://en.wikipedia.org/wiki/Protomartyr_(band)) (UvA/Post-HK). I assume that this is what the NYTimes-writer meant with musical taste peaking as teens. Therefore, I will be examining the most listened song of each band in the following slides.
 
 **Audio Analysis** {.storyboard}
 ===============================================================
 
-### B1: Investigating the scope of my outliers in **chromagrams** {data-commentary-width=300}
+### B1: Investigating the scope of my outliers in **chromagrams** {data-commentary-width=400}
 
 ```{r, include=FALSE}
 
@@ -437,7 +437,7 @@ It seems that there's one particlar genre in my corpus that keeps coming back th
 # VIET 3d5lGpqxg1cMEYrgTaGxZy (Continental Shelf)
 # PROTO 6hVVhORwKxGgJ9PC2jaA2R (Processed by the Boys)
 # TOE 0wJ2HYa7Do5nZYpnysJ3xd (C) high instrumentalness - math rock
-# CHIHEI 4NV9wYTFbFuOndIUUyE5Pi (Far) high instrumentalness - ambient
+# CHIHEI 3oPmgrfqc6FQpCYm7pljFh (Far) high instrumentalness - ambient
 
 
 joy_chroma <-
@@ -556,7 +556,7 @@ toe_chroma %>%
   scale_fill_viridis_c()
 
 chihei_chroma <-
-  get_tidy_audio_analysis("4NV9wYTFbFuOndIUUyE5Pi") %>%
+  get_tidy_audio_analysis("3oPmgrfqc6FQpCYm7pljFh") %>%
   select(segments) %>%
   unnest(segments) %>%
   select(start, duration, pitches)
@@ -591,15 +591,73 @@ chihei_chroma %>%
 
 ***
 
-Outlier: Song's very reliant on silence with occasional ...
+On the left, you can see six chromagrams that show which pitch classes are
+prominent within each time interval. The left and middle column are songs from
+post-punk bands that were dominant in my corpus as described in the previous slide.
+Songs on the right column are songs I selected based on high instrumentalness.
 
-Things to consider: 
-Most listened song vs favourite song of 2020.
-Compare multiple low valence/energy songs and see if they have something in common.
+Looking at each chromagram, you can clearly see some patterns in every song. 
+Joy Division's **"Transmission"** switches dominates at **C and D**, which
+is likely due to the bass guitar. In **"A Star Called Sun"**, pitch classes are
+more varied (**C, D, A**). You can also see three repeated G blocks that correspond 
+to the singer switching between pitches. "**Continental Shelf**" sounds "noisier"
+compared to the other songs, which is observable in its chromagram as the colours
+are less contrasted. However, you can still see that the song switches between
+**G/B and D/E**. "**Processed by the Boys**" is less "noisy", but shows some irregularities
+in the preferred pitch classes. There are multiple sections in which **D/E/F/G**
+is mostly applied, but there are two instances when pitch class **A** is used extensively,
+followed by a shorter **G**.
 
-Song by Chihei Hatakeyama is interesting, as it mostly dominated by major notes.
+### B2: Make a histogram of keys for different groups in your corpus {data-commentary-width=400}
 
-### B2: Self-similarity Matrices {data-commentary-width=300}
+```{r, echo = FALSE}
+oldvsnew_order <- combined_tempo                             
+oldvsnew_order$category <- factor(oldvsnew_order$category,     
+                         levels = c("2011-2012", 
+                                    "2013-2014", 
+                                    "2015-2016",
+                                    "2017-2018",
+                                    "2019-2020"))
+ggplot(oldvsnew_order, aes(factor(key), fill = factor(mode))) +
+  geom_bar(position = "stack") +
+  theme_linedraw() +
+  scale_fill_manual(labels = c("Minor", "Major"),
+                    values = c("#227788", "#DD8877")) +
+  scale_x_discrete(breaks = c("0", "1", "2", "3", "4", "5", 
+                              "6", "7", "8", "9", "10", "11"),
+                   labels = c("C","C#", "D", "D#",
+                              "E", "F", "F#", "G", "G#",
+                              "A", "A#", "B"),
+                   limits = c("0", "1", "2", "3", "4", "5", 
+                              "6", "7", "8", "9", "10", "11")) +
+  labs(y = "Count", x = "Key", 
+       fill = "Mode", 
+       title = "Keys and modes throughout the years on last.fm") +
+  theme_update(plot.title = element_text(hjust = 0.5)) +
+  theme(
+    title = element_text(color = "gray25"),
+    plot.caption = element_text(color = "gray30"),
+    plot.background = element_rect(fill = "white"),
+    axis.text.x = element_text(size = 7)
+  ) +
+  facet_grid(~ category)
+```
+
+***
+
+This graph divides all 600 songs evenly into five time frames and presents every
+period in a key/mode histogram to see which key and modes were dominant. The years
+**2011-2012** looks to be the least random than in later years, emphasizing **G/A** keys
+and to a lesser extent keys D/E. It is also apparent that **D# is the least favourite key**
+throughtout my corpus. When looking at the distribution from one period to the next, it looks
+like there's less of a preferred key, as many keys reach no higher than 12-13 songs.
+
+As for the modes, it looks like there's a slight preference towards major key.
+One interesting observation is the B key in "2013-2014", which only has minor keys
+songs involved. The year 2014 was in particular a low valence year (see A2/A3), which
+could explain the sad minor key at B.
+
+### B3: Self-similarity Matrices {data-commentary-width=400}
 
 ```{r, include=FALSE}
 
@@ -608,10 +666,10 @@ Song by Chihei Hatakeyama is interesting, as it mostly dominated by major notes.
 # VIET 3d5lGpqxg1cMEYrgTaGxZy (Continental Shelf)
 # PROTO 6hVVhORwKxGgJ9PC2jaA2R (Processed by the Boys)
 # TOE 0wJ2HYa7Do5nZYpnysJ3xd (C) high instrumentalness - math rock
-# CHIHEI 4NV9wYTFbFuOndIUUyE5Pi (Far) high instrumentalness - ambient, helemaal niets in te herkennen
+# CHIHEI 3oPmgrfqc6FQpCYm7pljFh (Far) high instrumentalness - ambient, helemaal niets in te herkennen
 
 boys <-
-  get_tidy_audio_analysis("1Bq65xKgu0kjSUMUlfWyPl") %>%
+  get_tidy_audio_analysis("3oPmgrfqc6FQpCYm7pljFh") %>%
   compmus_align(bars, segments) %>%
   select(bars) %>%
   unnest(bars) %>%
@@ -639,7 +697,7 @@ bind_rows(
   ) +
   geom_tile() +
   coord_fixed() +
-  ggtitle("Far from the Atmosphere by Chihei H.") +
+  ggtitle("Far from the Atmosphere III by Chihei H.") +
   facet_wrap(~type) +
   theme_classic() +
   scale_fill_viridis_c() +
@@ -649,10 +707,8 @@ bind_rows(
 ![Self-Similarity Matrices](ssm.jpg){width=100%}
 
 ***
-[W08: Draft]
-
-On the left, you see two self-similarity matrices displaying chroma and timbre 
-features of Processed by the Boys by Protomartyr (top track of 2020). 
+On the left, you see self-similarity matrices of the same songs as seen in B1,
+displaying chroma and timbre features. 
 As for the settings:segments are set in bars, applied normalization and summary 
 statistics are euclidean and root mean square, respectively. The darker the 
 colour brightness, the more similar the segments are compared to segments before 
@@ -664,217 +720,146 @@ Findings:
 
 - ...
 
-Things to consider:
-Compare above to top track of years 2016, 2018 (Rosebud) or other/more years.
+### B4: Cepstrogram {data-commentary-width=400}
 
-
-### B3: Chordograms {data-commentary-width=300}
-
-```{r, include = FALSE}
-
-circshift <- function(v, n) {
-  if (n == 0) v else c(tail(v, n), head(v, -n))
-}
-
-#      C     C#    D     Eb    E     F     F#    G     Ab    A     Bb    B
-major_chord <-
-  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    0,    0)
-minor_chord <-
-  c(   1,    0,    0,    1,    0,    0,    0,    1,    0,    0,    0,    0)
-seventh_chord <-
-  c(   1,    0,    0,    0,    1,    0,    0,    1,    0,    0,    1,    0)
-
-major_key <-
-  c(6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88)
-minor_key <-
-  c(6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17)
-
-chord_templates <-
-  tribble(
-    ~name, ~template,
-    "Gb:7", circshift(seventh_chord, 6),
-    "Gb:maj", circshift(major_chord, 6),
-    "Bb:min", circshift(minor_chord, 10),
-    "Db:maj", circshift(major_chord, 1),
-    "F:min", circshift(minor_chord, 5),
-    "Ab:7", circshift(seventh_chord, 8),
-    "Ab:maj", circshift(major_chord, 8),
-    "C:min", circshift(minor_chord, 0),
-    "Eb:7", circshift(seventh_chord, 3),
-    "Eb:maj", circshift(major_chord, 3),
-    "G:min", circshift(minor_chord, 7),
-    "Bb:7", circshift(seventh_chord, 10),
-    "Bb:maj", circshift(major_chord, 10),
-    "D:min", circshift(minor_chord, 2),
-    "F:7", circshift(seventh_chord, 5),
-    "F:maj", circshift(major_chord, 5),
-    "A:min", circshift(minor_chord, 9),
-    "C:7", circshift(seventh_chord, 0),
-    "C:maj", circshift(major_chord, 0),
-    "E:min", circshift(minor_chord, 4),
-    "G:7", circshift(seventh_chord, 7),
-    "G:maj", circshift(major_chord, 7),
-    "B:min", circshift(minor_chord, 11),
-    "D:7", circshift(seventh_chord, 2),
-    "D:maj", circshift(major_chord, 2),
-    "F#:min", circshift(minor_chord, 6),
-    "A:7", circshift(seventh_chord, 9),
-    "A:maj", circshift(major_chord, 9),
-    "C#:min", circshift(minor_chord, 1),
-    "E:7", circshift(seventh_chord, 4),
-    "E:maj", circshift(major_chord, 4),
-    "G#:min", circshift(minor_chord, 8),
-    "B:7", circshift(seventh_chord, 11),
-    "B:maj", circshift(major_chord, 11),
-    "D#:min", circshift(minor_chord, 3)
-  )
-
-key_templates <-
-  tribble(
-    ~name, ~template,
-    "Gb:maj", circshift(major_key, 6),
-    "Bb:min", circshift(minor_key, 10),
-    "Db:maj", circshift(major_key, 1),
-    "F:min", circshift(minor_key, 5),
-    "Ab:maj", circshift(major_key, 8),
-    "C:min", circshift(minor_key, 0),
-    "Eb:maj", circshift(major_key, 3),
-    "G:min", circshift(minor_key, 7),
-    "Bb:maj", circshift(major_key, 10),
-    "D:min", circshift(minor_key, 2),
-    "F:maj", circshift(major_key, 5),
-    "A:min", circshift(minor_key, 9),
-    "C:maj", circshift(major_key, 0),
-    "E:min", circshift(minor_key, 4),
-    "G:maj", circshift(major_key, 7),
-    "B:min", circshift(minor_key, 11),
-    "D:maj", circshift(major_key, 2),
-    "F#:min", circshift(minor_key, 6),
-    "A:maj", circshift(major_key, 9),
-    "C#:min", circshift(minor_key, 1),
-    "E:maj", circshift(major_key, 4),
-    "G#:min", circshift(minor_key, 8),
-    "B:maj", circshift(major_key, 11),
-    "D#:min", circshift(minor_key, 3)
-  )
-```
-
-
-```{r, include = FALSE}
-rosebud_chordkey <-
-  get_tidy_audio_analysis("1Rtcq2RErgV3NuQvKdCNf6") %>%
-  compmus_align(sections, segments) %>%
-  select(sections) %>%
-  unnest(sections) %>%
+```{r, include=FALSE}
+c_cowboy <-
+  get_tidy_audio_analysis("7DNRAyfqNpN0qzrS5JmJwY") %>% # Change URI.
+  compmus_align(bars, segments) %>%                     # Change `bars`
+  select(bars) %>%                                      #   in all three
+  unnest(bars) %>%                                      #   of these lines.
   mutate(
     pitches =
       map(segments,
         compmus_summarise, pitches,
-        method = "mean", norm = "manhattan"
+        method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  ) %>%
+  mutate(
+    timbre =
+      map(segments,
+        compmus_summarise, timbre,
+        method = "rms", norm = "euclidean"              # Change summary & norm.
       )
   )
 
-boys_chordkey <-
-  get_tidy_audio_analysis("6hVVhORwKxGgJ9PC2jaA2R") %>%
-  compmus_align(sections, segments) %>%
-  select(sections) %>%
-  unnest(sections) %>%
+c_juhachi <-
+  get_tidy_audio_analysis("2FghAESlnAFukLy5j2Ascp") %>% # Change URI.
+  compmus_align(beats, segments) %>%                     # Change `bars`
+  select(beats) %>%                                      #   in all three
+  unnest(beats) %>%                                      #   of these lines.
   mutate(
     pitches =
       map(segments,
         compmus_summarise, pitches,
-        method = "mean", norm = "manhattan"
+        method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  ) %>%
+  mutate(
+    timbre =
+      map(segments,
+        compmus_summarise, timbre,
+        method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  )
+
+# 5000: 6cUz4BunENKlWBIrue0ZE0
+# ganja: 0TgWgW2UYFctTDdN4GC6B7
+# suikui: 3ho7TfQryjbWUH3t8e6ooy
+
+suikui <-
+  get_tidy_audio_analysis("3ho7TfQryjbWUH3t8e6ooy") %>% # Change URI.
+  compmus_align(beats, segments) %>%                     # Change `bars`
+  select(beats) %>%                                      #   in all three
+  unnest(beats) %>%                                      #   of these lines.
+  mutate(
+    pitches =
+      map(segments,
+        compmus_summarise, pitches,
+        method = "rms", norm = "euclidean"              # Change summary & norm.
+      )
+  ) %>%
+  mutate(
+    timbre =
+      map(segments,
+        compmus_summarise, timbre,
+        method = "rms", norm = "euclidean"              # Change summary & norm.
       )
   )
 ```
 
-
-```{r, include = FALSE}
-rosebud_key <- rosebud_chordkey %>% 
-  compmus_match_pitch_template(
-    key_templates,         # Change to chord_templates if desired
-    method = "aitchison",  # Try different distance metrics
-    norm = "manhattan"     # Try different norms
-  ) %>%
+```{r, include=FALSE}
+c_cowboy %>%
+  compmus_gather_timbre() %>%
   ggplot(
-    aes(x = start + duration / 2, width = duration, y = name, fill = d)
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = basis,
+      fill = value
+    )
   ) +
   geom_tile() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_minimal() +
-  labs(x = "Time (s)", y = "")
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  scale_fill_viridis_c() +      
+  ggtitle("Dead Cowboy by Lightning Bolt") +
+  theme_classic()
 
-rosebud_chord <- rosebud_chordkey %>% 
-  compmus_match_pitch_template(
-    chord_templates,       # Change to chord_templates if desired
-    method = "manhattan",  # Try different distance metrics
-    norm = "manhattan"     # Try different norms
-  ) %>%
+c_juhachi %>%
+  compmus_gather_timbre() %>%
   ggplot(
-    aes(x = start + duration / 2, width = duration, y = name, fill = d)
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = basis,
+      fill = value
+    )
   ) +
   geom_tile() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_minimal() +
-  labs(x = "Time (s)", y = "") +
-  theme(axis.text=element_text(size=5))
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  scale_fill_viridis_c() +  
+  ggtitle("Jùhachi by Sylvain Chauveau") +
+  theme_classic()
 
-boys_key <- boys_chordkey %>% 
-  compmus_match_pitch_template(
-    key_templates,         # Change to chord_templates if desired
-    method = "aitchison",  # Try different distance metrics
-    norm = "manhattan"     # Try different norms
-  ) %>%
+suikui %>%
+  compmus_gather_timbre() %>%
   ggplot(
-    aes(x = start + duration / 2, width = duration, y = name, fill = d)
+    aes(
+      x = start + duration / 2,
+      width = duration,
+      y = basis,
+      fill = value
+    )
   ) +
   geom_tile() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_minimal() +
-  labs(x = "Time (s)", y = "")
-
-boys_chord <- boys_chordkey %>% 
-  compmus_match_pitch_template(
-    chord_templates,       # Change to chord_templates if desired
-    method = "manhattan",  # Try different distance metrics
-    norm = "manhattan"     # Try different norms
-  ) %>%
-  ggplot(
-    aes(x = start + duration / 2, width = duration, y = name, fill = d)
-  ) +
-  geom_tile() +
-  scale_fill_viridis_c(guide = "none") +
-  theme_minimal() +
-  labs(x = "Time (s)", y = "") +
-  theme(axis.text=element_text(size=5))
-
+  labs(x = "Time (s)", y = NULL, fill = "Magnitude") +
+  scale_fill_viridis_c() +  
+  ggtitle("Water Brother (水哥) by DJ Didilong") +
+  theme_classic()
 ```
 
-```{r, echo = FALSE}
-grid.arrange(arrangeGrob(rosebud_chord, top = grid::textGrob("Rosebud", hjust = 0.15), left = "Chordogram"),
-             arrangeGrob(boys_chord, top = grid::textGrob("Processed by the Boys", hjust =0.21)),
-             arrangeGrob(rosebud_key, left="Keygrams"), boys_key, ncol=2, nrow=2, widths = c(2.2,2) ,heights = c(2.2,2))
-```
+
+![Cepstrograms](cepstro.jpg){width=100%}
+
 
 ***
-[W09: Draft]
 
-With the previous songs in mind, I have created key- and chordograms of
-top tracks from 2018 (Rosebud by U.S. Girls) and 2020 (Processed by the Boys 
-by Protomartyr). 
+c01 is known to be ‘loudness’, c02 stands for the low frequencies, c03 represents the mid range and c04 stands for ‘noise’. The other levels are not that clear and also less and less visible.
 
-The level of prominence of each key/chord is represent by a darker colour.
+c01
 
-I used "norm = manhattan; distance = manhattan" for both chordograms, and
-"norm = manhattan; distance = aitchison" for both keygrams.
+Text
 
-**Need to work out my findings**
+Outlier with loudness --> Dead Cowboy by Lightning Bolt.
+Drop in c09 at 190 and 300 seconds coincides with lack of drums.
 
-Things to consider:
-Compare above to top track of years 2016 (or other/more years).
+C11 start chorus followed by instrumentals and occasional backup vocals
+
+Expect 
 
 
-### B4: Average tempo similar over the years {data-commentary-width=300}
+
+### B5: Average tempo similar over the years {data-commentary-width=400}
 
 ```{r, include = FALSE}
 
@@ -890,10 +875,8 @@ y2020 %>%
   summarise(mean_tempo = mean(tempo))
 ```
 
-
 ```{r, echo = FALSE, message = FALSE}
-
-combined_tempo %>%
+all_temp <- combined_tempo %>%
   ggplot( 
     aes(
       x = tempo,
@@ -903,11 +886,11 @@ combined_tempo %>%
   facet_wrap(~category) +
   scale_fill_manual(values = c("#660060", "#f66d7f", "#f6a97f", "#227788", "#DD8877")) +
   geom_histogram(binwidth = 5, position = "identity", alpha = 0.5) +
-  geom_vline(xintercept = 127.5315, linetype = "dashed", color = "#660066", size = 1) +
-  geom_vline(xintercept = 126.4983	, linetype = "dashed", color = "#f66d7a", size = 1) +
-  geom_vline(xintercept = 134.5205, linetype = "dashed", color = "#f6a97a", size = 1) +
-  geom_vline(xintercept = 128.7184, linetype = "dashed", color = "#227788", size = 1) +
-  geom_vline(xintercept = 125.7792, linetype = "dashed", color = "#DD8877", size = 1) +
+  geom_vline(xintercept = 127.5315, linetype = "dashed", color = "#660066", size = 0.5) +
+  geom_vline(xintercept = 126.4983	, linetype = "dashed", color = "#f66d7a", size = 0.5) +
+  geom_vline(xintercept = 134.5205, linetype = "dashed", color = "#f6a97a", size = 0.5) +
+  geom_vline(xintercept = 128.7184, linetype = "dashed", color = "#227788", size = 0.5) +
+  geom_vline(xintercept = 125.7792, linetype = "dashed", color = "#DD8877", size = 0.5) +
   geom_text(
     aes(x = tempo, y = y, label = label),
     data = tibble(label = c("Setsuyakuka"),
@@ -928,50 +911,46 @@ combined_tempo %>%
   ) +
   theme_update(plot.title = element_text(hjust = 0.5)) +
   theme(
-    text = element_text(family = "Bookman"),
     title = element_text(color = "gray25"),
     plot.caption = element_text(color = "gray30"),
-    plot.background = element_rect(fill = "white")
+    plot.background = element_rect(fill = "white"),
+    legend.position = "none"
   )
 ```
-
-***
-
-Unavailable: Loudness, Key, Mode, Tempo, Time Signature
-
-On the left, you'll observe a plotted histogram containing the tempo of every song per two years.
-The average tempo of every time period are similar to each other, with a range between 125 and 135 bpm.
-A minor outlier is 2015-2016, which comes around 134 bpm. This correlates to 2016 having
-the highest energy feature (see A3).
-
-### B5: Tempograms {data-commentary-width=300}
 
 ```{r, include = FALSE}
 tricot <- get_tidy_audio_analysis("28IqHczYgXPd2qVM2evm1J")
 viet <- get_tidy_audio_analysis("58ITGKThH6gQ4qfkir8kKb")
 ```
 
-```{r, include = FALSE}
-#viet %>%
- # tempogram(window_size = 4, hop_size = 1, cyclic = FALSE) %>%
-  #ggplot(aes(x = time - 20, y = bpm, fill = power)) +
-  #geom_raster() +
-  #scale_fill_viridis_c(guide = "none") +
-  #labs(x = "Time (s)", y = "Tempo (BPM)", title = "Unconscious Melody by Preoccupations") +
-  #theme_classic()
+```{r, echo=FALSE, cache=TRUE}
+viet_temp <- viet %>%
+  tempogram(window_size = 4, hop_size = 1, cyclic = FALSE) %>%
+  ggplot(aes(x = time - 20, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)", title = "Unconscious Melody by Preoccupations") +
+  theme_classic()
 
-#tricot %>%
- # tempogram(window_size = 4, hop_size = 1, cyclic = FALSE) %>%
-  #ggplot(aes(x = time, y = bpm, fill = power)) +
-  #geom_raster() +
-  #scale_fill_viridis_c(guide = "none") +
-  #labs(x = "Time (s)", y = "Tempo (BPM)", title = "Setsuyakuka by Tricot") +
-  #theme_classic()
+tricot_temp <- tricot %>%
+  tempogram(window_size = 4, hop_size = 1, cyclic = FALSE) %>%
+  ggplot(aes(x = time, y = bpm, fill = power)) +
+  geom_raster() +
+  scale_fill_viridis_c(guide = "none") +
+  labs(x = "Time (s)", y = "Tempo (BPM)", title = "Setsuyakuka by Tricot") +
+  theme_classic()
+
+grid.arrange(arrangeGrob(viet_temp, tricot_temp),all_temp,nrow=1,ncol=2)
+
+# OPTIONEEL: TE VERVANGEN MET TRACK-LEVEL SUMMARIES (zie w09)
 ```
 
-![Tempograms](tempogram.jpg){width=100%}
-
 ***
+
+On the left, you'll observe a plotted histogram containing the tempo of every song per two years.
+The average tempo of every time period are similar to each other, with a range between 125 and 135 bpm.
+A minor outlier is 2015-2016, which comes around 134 bpm. This correlates to 2016 having
+the highest energy feature (see A3).
 
 For the tempogram analysis, a typical post-punk ("Unconscious Melody") and an atypical math-rock ("Setsuyakuka") song were selected to compare its rhythmic differences. The tempo of Unconscious Melody is mostly constant
 around 220 bpm, with an occasional switch towards 470 bpm. 
@@ -983,7 +962,7 @@ pronounced around 380 bpm in the first half, it goes all over the place in the s
 **Classification** {.storyboard}
 ===============================================================
 
-### C1: Predicting my music listening behaviour over the years {data-commentary-width=300}
+### C1: Predicting my music listening behaviour over the years {data-commentary-width=400}
 
 ```{r, include = FALSE}
 indie <-
@@ -1001,7 +980,7 @@ indie <-
   ) 
 ```
 
-```{r, include = FALSE, cache = FALSE}
+```{r, include = FALSE, cache = TRUE}
 indie_features <-
   indie %>%  # For your portfolio, change this to the name of your corpus.
   add_audio_analysis() %>% 
@@ -1100,7 +1079,7 @@ indie_forest %>% get_pr()
 ```
 
 ```{r, echo = FALSE, cache = TRUE}
-workflow() %>% 
+bijna <- workflow() %>% 
   add_recipe(indie_recipe) %>% 
   add_model(forest_model) %>% 
   fit(indie_features) %>% 
@@ -1114,20 +1093,19 @@ workflow() %>%
   theme_minimal() +
   labs(x = NULL, y = "Importance")
 
-indie_forest %>% get_conf_mat() %>% autoplot(type = "heatmap")
+klaar <- indie_forest %>% get_conf_mat() %>% autoplot(type = "heatmap")
+
+grid.arrange(arrangeGrob(bijna, klaar,nrow=1,ncol=2))
+
 ```
 
 ***
 
-[Draft]
-
-Some observations
-
-KNN matrix: \
+**Random Forest Matrix**: \
 - Periods 2011-2012, 2013-2014, and 2019-2020 are most distinctive compared to others. \
 - 2017-2018 has a minor overlap with 2015-2016. In the context of my corpus, it could mean that my listening habits were similar between those years.
 
-Random forest tree: \
+**Random forest Tree**: \
 - Timbre is important (c01, c03, and c11). \
 - Instrumentalness is also an important factor. Could be due to math rock (usually without vocals in East Asia) and ambient music, of which both genres became prominent on my last.fm starting from 2015-2016. \
 
@@ -1141,20 +1119,41 @@ Table 1. Accuracy of random forest model:
 | 2017-2018 | 0.353 |	0.342 |	
 | 2019-2020 | 0.484	| 0.492	|
 
-To do:
-Resize figures.
-Make facetted plots of top features from the random forest.
-Using only the top 10 most influential features and replot everything.
+### C2: Timbre components c3 and c11 can (sort of) distuinguish post-HK era {data-commentary-width=400}
+
+```{r, echo = FALSE}
+plotplot <- indie_features %>%
+  ggplot(aes(x = c03, y = c11, size = danceability, colour = playlist, label = track.name)) +
+  geom_point(alpha = 0.8) +    # OR DANCEABILITY AND INSTRUMENTALNESS
+  scale_color_viridis_d() +
+  labs(
+    x = "c03",
+    y = "c11",
+    size = "Energy",
+    colour = "Playlist"
+  )
+
+ggplotly(plotplot)
+```
+
+
+***
+
+This plot visualizes how the top features were distinguished with the random forest model.
+Timbre component c03 was plotted against c11, while the danceability feature was presented in size.
+
+In general, variation among age groups are not very clear, 
+however **'2019-2020'** seems to skew towards the bottom left corner. 
+- Most yellow dots at the **bottom left** part are considered **hip-hop music** (Leo Wang, Matt Force). These songs are grouped with three other hip-hop tracks by Run The Jewels and Noname from '2017-2018'. 
+- Also interesting are the four songs at the top of c11 with low danceability, which happen to be ambient (Chihei Hatakeyama, Ryuichi Sakamoto, Julianna Barwick).
+
+Although not too distinctive, it looks like the trained classifier was able to distinguish hip-hop from my post-HK years.
 
 **Conclusions** {.storyboard}
 ===============================================================
 
 Column 1
 ---------------------------------------------------------------
-
-TODO
-
-Relevant link: https://www.theverge.com/2018/2/12/17003076/spotify-data-shows-songs-teens-adult-taste-music
 
 Column 2 
 ---------------------------------------------------------------
