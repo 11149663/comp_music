@@ -1,5 +1,7 @@
-Computational Musicology: Portfolio
+Computational Musicology: My Portfolio
 -----
+
+[Click here](https://11149663.github.io/comp_music/) to view my portfolio.
 
 What is your corpus, why did you choose it, and what do you think is interesting about it?
 -----
